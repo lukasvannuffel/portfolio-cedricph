@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function() {
         initNavigation();
         initMobileMenu();
         initHeaderScroll();
@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Initialize active menu state based on URL hash
      * Handles: / (Home), /#about (About), /#featured (Featured), /#contact (Contact)
+     * Also handles Portfolio pages and parent-child relationships
      */
     function initActiveMenuState() {
         const navMenu = document.querySelector('.nav-menu');
@@ -243,7 +244,83 @@ document.addEventListener('DOMContentLoaded', function() {
                 const menuItem = targetLink.closest('li');
                 if (menuItem) {
                     menuItem.classList.add('current-menu-item', 'is-active');
+                    
+                    // Also mark parent menu item as active if this is a child item
+                    const parentMenuItem = menuItem.parentElement.closest('li');
+                    if (parentMenuItem && parentMenuItem.classList.contains('menu-item-has-children')) {
+                        parentMenuItem.classList.add('current-menu-ancestor', 'is-active');
+                    }
                 }
+            }
+        }
+        
+        // Check current page URL for Portfolio pages
+        function checkCurrentPage() {
+            const currentPath = window.location.pathname.toLowerCase();
+            const currentHash = window.location.hash.toLowerCase();
+            
+            // If we have a hash, use hash-based logic (for front-page sections)
+            if (currentHash && currentHash !== '#') {
+                setActiveMenuItem(currentHash);
+                return;
+            }
+            
+            // Check for Portfolio pages
+            if (currentPath.includes('/portfolio')) {
+                removeAllActiveClasses();
+                
+                const allLinks = navMenu.querySelectorAll('a');
+                
+                // Find and activate the current page link
+                allLinks.forEach(function(link) {
+                    const href = link.getAttribute('href');
+                    if (href) {
+                        try {
+                            const linkUrl = new URL(href, window.location.origin);
+                            const linkPath = linkUrl.pathname.toLowerCase();
+                            
+                            // Check if this link matches current page
+                            if (linkPath === currentPath || 
+                                (currentPath.startsWith(linkPath) && linkPath !== '/')) {
+                                const menuItem = link.closest('li');
+                                if (menuItem) {
+                                    menuItem.classList.add('current-menu-item', 'is-active');
+                                    
+                                    // Also activate parent if this is a child
+                                    const parentMenuItem = menuItem.parentElement.closest('li');
+                                    if (parentMenuItem && parentMenuItem.classList.contains('menu-item-has-children')) {
+                                        parentMenuItem.classList.add('current-menu-ancestor', 'is-active');
+                                    }
+                                }
+                            }
+                            
+                            // Also activate Portfolio parent if we're on any portfolio page
+                            if (linkPath === '/portfolio' || linkPath === '/portfolio/') {
+                                const portfolioMenuItem = link.closest('li');
+                                if (portfolioMenuItem && currentPath.includes('/portfolio')) {
+                                    portfolioMenuItem.classList.add('current-menu-ancestor', 'is-active');
+                                }
+                            }
+                        } catch (e) {
+                            // If URL parsing fails, try simple string comparison
+                            if (href.toLowerCase().includes(currentPath) || currentPath.includes(href.toLowerCase())) {
+                                const menuItem = link.closest('li');
+                                if (menuItem) {
+                                    menuItem.classList.add('current-menu-item', 'is-active');
+                                    
+                                    // Also activate parent if this is a child
+                                    const parentMenuItem = menuItem.parentElement.closest('li');
+                                    if (parentMenuItem && parentMenuItem.classList.contains('menu-item-has-children')) {
+                                        parentMenuItem.classList.add('current-menu-ancestor', 'is-active');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // For other pages or home, check hash
+                checkHash();
             }
         }
         
@@ -254,13 +331,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Listen for hash changes
-        window.addEventListener('hashchange', checkHash);
+        window.addEventListener('hashchange', function() {
+            const hash = window.location.hash;
+            if (hash) {
+                setActiveMenuItem(hash);
+            } else {
+                checkCurrentPage();
+            }
+        });
         
         // Listen for popstate (back/forward buttons)
-        window.addEventListener('popstate', checkHash);
+        window.addEventListener('popstate', checkCurrentPage);
         
         // Initial check
-        checkHash();
+        checkCurrentPage();
     }
 
     /**

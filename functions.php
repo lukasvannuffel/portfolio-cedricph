@@ -77,6 +77,7 @@ add_filter('nav_menu_link_attributes', 'mytheme_nav_menu_link_attributes', 10, 3
 /**
  * Remove active classes from menu items that link to hash sections
  * We'll handle active states via JavaScript based on URL hash
+ * But keep WordPress default behavior for regular pages (like Portfolio)
  */
 function mytheme_nav_menu_css_class($classes, $item, $args) {
     // Only apply to primary menu
@@ -103,6 +104,10 @@ function mytheme_nav_menu_css_class($classes, $item, $args) {
                 $classes = array_diff($classes, array('current-menu-item', 'current_page_item'));
             }
         }
+        
+        // For Portfolio pages, keep WordPress default behavior
+        // WordPress will automatically add current-menu-ancestor to parent
+        // when a child page is active
     }
     
     return $classes;
