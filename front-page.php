@@ -9,7 +9,7 @@
     get_template_part('template-parts/frontpage-sections/about-section', 'about');
     
     // Include services section
-    get_template_part('template-parts/frontpage-sections/previews-section', 'previews');
+    get_template_part('template-parts/frontpage-sections/featured-section', 'featured');
     
     // Include contact section
     get_template_part('template-parts/frontpage-sections/contact-section', 'contact');

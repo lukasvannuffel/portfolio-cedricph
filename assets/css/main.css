@@ -1,22 +1,471 @@
 /* ====================================
+   Google Fonts Import
+   ==================================== */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+/* ====================================
    Global Styles
    ==================================== */
-
    * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 /* ====================================
-   Root Variables
+   CSS Variables
    ==================================== */
 :root {
     /* Colors */
-
+    --color-bg-primary: #0d0d0d;
+    --color-bg-secondary: #1f1f1f;
+    --color-text-primary: #ebebeb;
+    --color-text-secondary: #8a8a8a;
+    --color-accent-1: #d4a373;
+    --color-accent-2: #c17a5c;
+    --color-accent-3: #8b6f47;
 
     /* Fonts */
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
 
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
 
+    /* Transitions */
+    --transition-base: 0.3s ease;
+    --transition-fast: 0.15s ease;
+}
 
+/* ====================================
+   Header & Navigation
+   ==================================== */
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: transparent;
+    border-bottom: 1px solid transparent;
+    padding: var(--spacing-sm) 0;
+    transition: background-color var(--transition-base), border-bottom-color var(--transition-base), padding var(--transition-base);
+}
+
+.site-header.scrolled {
+    background-color: rgba(13, 13, 13, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.site-header .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+/* Logo / Branding */
+.site-branding {
+    flex-shrink: 0;
+}
+
+.site-branding .site-title,
+.site-branding .custom-logo-link {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+    transition: color var(--transition-base);
+}
+
+.site-branding .site-title:hover,
+.site-branding .custom-logo-link:hover {
+    color: var(--color-accent-1);
+}
+
+.site-branding .custom-logo {
+    max-height: 40px;
+    width: auto;
+}
+
+/* Navigation Menu */
+.main-navigation {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: var(--spacing-md);
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li {
+    margin: 0;
+}
+
+.nav-menu a {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    display: block;
+    position: relative;
+    transition: color var(--transition-base);
+}
+
+/* Only active items get accent color, not hover */
+.nav-menu .current-menu-item > a,
+.nav-menu .current_page_item > a,
+.nav-menu .current-menu-ancestor > a,
+.nav-menu .is-active > a {
+    color: var(--color-accent-1);
+}
+
+/* Hover state - only underline, keep text color */
+.nav-menu a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    height: 1px;
+    background-color: var(--color-accent-1);
+    transform: scaleX(0);
+    transition: transform var(--transition-base);
+}
+
+.nav-menu a:hover::after,
+.nav-menu a:focus::after {
+    transform: scaleX(1);
+}
+
+/* Submenu (Dropdown) Styles */
+.nav-menu .sub-menu,
+.nav-menu .children {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 200px;
+    background-color: var(--color-bg-secondary);
+    list-style: none;
+    margin: 0;
+    padding: var(--spacing-sm) 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity var(--transition-base), visibility var(--transition-base), transform var(--transition-base);
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.nav-menu li {
+    position: relative;
+}
+
+.nav-menu li:hover > .sub-menu,
+.nav-menu li:hover > .children,
+.nav-menu li:focus-within > .sub-menu,
+.nav-menu li:focus-within > .children {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nav-menu .sub-menu li,
+.nav-menu .children li {
+    margin: 0;
+}
+
+.nav-menu .sub-menu a,
+.nav-menu .children a {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    display: block;
+    position: relative;
+    padding-left: var(--spacing-lg);
+}
+
+.nav-menu .sub-menu a::before,
+.nav-menu .children a::before {
+    content: 'o';
+    position: absolute;
+    left: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.nav-menu .sub-menu a:hover,
+.nav-menu .sub-menu a:focus,
+.nav-menu .children a:hover,
+.nav-menu .children a:focus {
+    color: var(--color-accent-1);
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.nav-menu .sub-menu .current-menu-item > a,
+.nav-menu .sub-menu .current_page_item > a,
+.nav-menu .children .current-menu-item > a,
+.nav-menu .children .current_page_item > a {
+    color: var(--color-accent-1);
+}
+
+.nav-menu .sub-menu a::after,
+.nav-menu .children a::after {
+    display: none;
+}
+
+/* Instagram Link */
+.header-social {
+    flex-shrink: 0;
+}
+
+.instagram-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color var(--transition-base), transform var(--transition-fast);
+}
+
+.instagram-link:hover,
+.instagram-link:focus {
+    color: var(--color-accent-1);
+    transform: scale(1.1);
+}
+
+.instagram-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 2px;
+    background-color: var(--color-text-primary);
+    border-radius: 2px;
+    transition: all var(--transition-base);
+    transform-origin: center;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(8px, 8px);
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* ====================================
+   Mobile Styles (Mobile-First)
+   ==================================== */
+@media (max-width: 768px) {
+    .site-header {
+        padding: var(--spacing-xs) 0;
+    }
+
+    .site-header .container {
+        padding: 0 var(--spacing-sm);
+    }
+
+    .header-inner {
+        gap: var(--spacing-sm);
+    }
+
+    .site-branding .site-title,
+    .site-branding .custom-logo-link {
+        font-size: 1.25rem;
+    }
+
+    .site-branding .custom-logo {
+        max-height: 32px;
+    }
+
+    /* Hide desktop navigation */
+    .main-navigation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--color-bg-primary);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-100%);
+        transition: opacity var(--transition-base), visibility var(--transition-base), transform var(--transition-base);
+        z-index: 999;
+    }
+
+    .main-navigation.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .nav-menu {
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        text-align: center;
+    }
+
+    .nav-menu a {
+        font-size: 1.125rem;
+        padding: var(--spacing-sm);
+    }
+
+    .nav-menu a::after {
+        left: 50%;
+        right: auto;
+        width: 40px;
+        transform: translateX(-50%) scaleX(0);
+    }
+
+    .nav-menu a:hover::after,
+    .nav-menu a:focus::after,
+    .nav-menu .current-menu-item > a::after,
+    .nav-menu .current_page_item > a::after,
+    .nav-menu .is-active > a::after {
+        transform: translateX(-50%) scaleX(1);
+    }
+
+    /* Show mobile menu toggle */
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    /* Hide Instagram icon in mobile menu */
+    .header-social {
+        display: none;
+    }
+}
+
+/* ====================================
+   Tablet Styles
+   ==================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-menu {
+        gap: var(--spacing-sm);
+    }
+
+    .nav-menu a {
+        font-size: 0.8125rem;
+        padding: var(--spacing-xs);
+    }
+}
+
+/* ====================================
+   Desktop Styles
+   ==================================== */
+@media (min-width: 1025px) {
+    .site-header {
+        padding: var(--spacing-md) 0;
+    }
+
+    .nav-menu {
+        gap: var(--spacing-lg);
+    }
+
+    .nav-menu a {
+        font-size: 0.875rem;
+    }
+}
+
+/* ====================================
+   Main Content Spacing
+   ==================================== */
+/* Add padding-top to main content to account for fixed header */
+main {
+    padding-top: 60px; /* Adjust based on header height */
+}
+
+@media (min-width: 1025px) {
+    main {
+        padding-top: 80px; /* Larger padding on desktop */
+    }
+}
+
+/* Ensure sections can be scrolled to properly */
+section[id],
+[id^="section-"],
+[id^="about"],
+[id^="featured"],
+[id^="contact"],
+[id^="hero"] {
+    scroll-margin-top: 80px; /* Account for fixed header */
+}
+
+@media (max-width: 768px) {
+    section[id],
+    [id^="section-"],
+    [id^="about"],
+    [id^="featured"],
+    [id^="contact"],
+    [id^="hero"] {
+        scroll-margin-top: 60px;
+    }
 }
