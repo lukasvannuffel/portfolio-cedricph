@@ -125,4 +125,95 @@ function mytheme_body_classes($classes) {
 }
 add_filter('body_class', 'mytheme_body_classes');
 
+/**
+ * Register ACF Field Groups
+ * Hero Section Fields for Front Page
+ */
+if (function_exists('acf_add_local_field_group')) {
+    acf_add_local_field_group(array(
+        'key' => 'group_hero_section',
+        'title' => 'Hero Section',
+        'fields' => array(
+            array(
+                'key' => 'field_hero_background_image',
+                'label' => 'Background Image',
+                'name' => 'hero_background_image',
+                'type' => 'image',
+                'instructions' => 'Upload a background image for the hero section. Recommended size: 1920x1080px or larger.',
+                'required' => 0,
+                'return_format' => 'array',
+                'preview_size' => 'medium',
+                'library' => 'all',
+            ),
+            array(
+                'key' => 'field_hero_title',
+                'label' => 'Title',
+                'name' => 'hero_title',
+                'type' => 'text',
+                'instructions' => 'Enter the main hero title (e.g., "Capturing Moments That Matter")',
+                'required' => 1,
+                'default_value' => 'Capturing Moments That Matter',
+                'placeholder' => 'Enter hero title',
+            ),
+            array(
+                'key' => 'field_hero_subtitle',
+                'label' => 'Subtitle / Description',
+                'name' => 'hero_subtitle',
+                'type' => 'textarea',
+                'instructions' => 'Enter the subtitle or description text below the title',
+                'required' => 0,
+                'rows' => 3,
+                'default_value' => 'Event & portrait photography that tells your story through authentic, cinematic imagery',
+                'placeholder' => 'Enter subtitle text',
+            ),
+            array(
+                'key' => 'field_hero_cta_text',
+                'label' => 'CTA Button Text',
+                'name' => 'hero_cta_text',
+                'type' => 'text',
+                'instructions' => 'Enter the text for the call-to-action button',
+                'required' => 0,
+                'default_value' => 'View portfolio',
+                'placeholder' => 'e.g., View portfolio',
+            ),
+            array(
+                'key' => 'field_hero_cta_link',
+                'label' => 'CTA Button Link',
+                'name' => 'hero_cta_link',
+                'type' => 'link',
+                'instructions' => 'Select where the CTA button should link to',
+                'required' => 0,
+                'return_format' => 'array',
+            ),
+            array(
+                'key' => 'field_hero_show_scroll_indicator',
+                'label' => 'Show Scroll Indicator',
+                'name' => 'hero_show_scroll_indicator',
+                'type' => 'true_false',
+                'instructions' => 'Display a scroll indicator arrow at the bottom of the hero section',
+                'required' => 0,
+                'default_value' => 1,
+                'ui' => 1,
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param' => 'page_type',
+                    'operator' => '==',
+                    'value' => 'front_page',
+                ),
+            ),
+        ),
+        'menu_order' => 0,
+        'position' => 'normal',
+        'style' => 'default',
+        'label_placement' => 'top',
+        'instruction_placement' => 'label',
+        'hide_on_screen' => '',
+        'active' => true,
+        'description' => 'Hero section fields for the front page',
+    ));
+}
+
 ?>
