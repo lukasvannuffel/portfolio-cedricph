@@ -214,6 +214,54 @@ if (function_exists('acf_add_local_field_group')) {
         'active' => true,
         'description' => 'Hero section fields for the front page',
     ));
+
+    // About Section Fields for Front Page
+    acf_add_local_field_group(array(
+        'key' => 'group_about_section',
+        'title' => 'About Section',
+        'fields' => array(
+            array(
+                'key' => 'field_about_profile_image',
+                'label' => 'Profile Image',
+                'name' => 'about_profile_image',
+                'type' => 'image',
+                'instructions' => 'Upload a profile image for the about section. Recommended size: 600x600px or larger (square format works best).',
+                'required' => 0,
+                'return_format' => 'array',
+                'preview_size' => 'medium',
+                'library' => 'all',
+            ),
+            array(
+                'key' => 'field_about_text',
+                'label' => 'About Text',
+                'name' => 'about_text',
+                'type' => 'wysiwyg',
+                'instructions' => 'Enter the about me text content. You can format the text using the editor.',
+                'required' => 0,
+                'tabs' => 'all',
+                'toolbar' => 'full',
+                'media_upload' => 1,
+                'delay' => 0,
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param' => 'page_type',
+                    'operator' => '==',
+                    'value' => 'front_page',
+                ),
+            ),
+        ),
+        'menu_order' => 1,
+        'position' => 'normal',
+        'style' => 'default',
+        'label_placement' => 'top',
+        'instruction_placement' => 'label',
+        'hide_on_screen' => '',
+        'active' => true,
+        'description' => 'About section fields for the front page',
+    ));
 }
 
 ?>

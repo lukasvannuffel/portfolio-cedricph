@@ -10,6 +10,7 @@
         initMobileMenu();
         initHeaderScroll();
         initActiveMenuState();
+        initAboutImageHover();
     });
 
     /**
@@ -116,11 +117,23 @@
         const mobileToggle = document.querySelector('.mobile-menu-toggle');
         const mainNavigation = document.querySelector('.main-navigation');
         const body = document.body;
+        const html = document.documentElement;
         
         if (mobileToggle && mainNavigation) {
+            // Store current scroll position
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            // Prevent body scroll and maintain scroll position
+            body.style.position = 'fixed';
+            body.style.top = `-${scrollY}px`;
+            body.style.width = '100%';
+            body.style.overflow = 'hidden';
+            
+            // Store scroll position for restoration
+            body.setAttribute('data-scroll-y', scrollY);
+            
             mobileToggle.setAttribute('aria-expanded', 'true');
             mainNavigation.classList.add('active');
-            body.style.overflow = 'hidden'; // Prevent body scroll when menu is open
         }
     }
 
@@ -135,7 +148,18 @@
         if (mobileToggle && mainNavigation) {
             mobileToggle.setAttribute('aria-expanded', 'false');
             mainNavigation.classList.remove('active');
-            body.style.overflow = ''; // Restore body scroll
+            
+            // Restore scroll position
+            const scrollY = body.getAttribute('data-scroll-y');
+            body.style.position = '';
+            body.style.top = '';
+            body.style.width = '';
+            body.style.overflow = '';
+            body.removeAttribute('data-scroll-y');
+            
+            if (scrollY) {
+                window.scrollTo(0, parseInt(scrollY, 10));
+            }
         }
     }
 
@@ -345,6 +369,49 @@
         
         // Initial check
         checkCurrentPage();
+    }
+
+    /**
+     * Initialize about image hover effect
+     * Makes the profile picture follow the mouse cursor slightly on hover
+     */
+    function initAboutImageHover() {
+        const aboutImage = document.querySelector('.about-image');
+        
+        if (!aboutImage) {
+            return;
+        }
+        
+        const maxTilt = 15; // Maximum tilt in degrees
+        const maxMove = 10; // Maximum movement in pixels
+        
+        aboutImage.addEventListener('mouseenter', function() {
+            this.style.transition = 'transform 0.1s ease-out';
+        });
+        
+        aboutImage.addEventListener('mouseleave', function() {
+            this.style.transition = 'transform 0.5s ease-out';
+            this.style.transform = 'translate(0, 0) rotateX(0) rotateY(0)';
+        });
+        
+        aboutImage.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            // Calculate mouse position relative to center (-1 to 1)
+            const mouseX = (e.clientX - centerX) / (rect.width / 2);
+            const mouseY = (e.clientY - centerY) / (rect.height / 2);
+            
+            // Calculate transform values
+            const rotateY = mouseX * maxTilt;
+            const rotateX = -mouseY * maxTilt;
+            const translateX = mouseX * maxMove;
+            const translateY = mouseY * maxMove;
+            
+            // Apply transform
+            this.style.transform = `translate(${translateX}px, ${translateY}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
     }
 
     /**
