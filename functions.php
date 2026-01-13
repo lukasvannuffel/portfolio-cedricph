@@ -262,6 +262,44 @@ if (function_exists('acf_add_local_field_group')) {
         'active' => true,
         'description' => 'About section fields for the front page',
     ));
+
+    // Contact Section Fields for Front Page
+    acf_add_local_field_group(array(
+        'key' => 'group_contact_section',
+        'title' => 'Contact Section',
+        'fields' => array(
+            array(
+                'key' => 'field_contact_description',
+                'label' => 'Description Text',
+                'name' => 'contact_description',
+                'type' => 'wysiwyg',
+                'instructions' => 'Enter the description text that appears below the title. You can format the text using the editor.',
+                'required' => 0,
+                'tabs' => 'all',
+                'toolbar' => 'full',
+                'media_upload' => 1,
+                'delay' => 0,
+                'default_value' => 'Interested in working together? Fill out the form below and I\'ll get back to you within 24 hours.',
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param' => 'page_type',
+                    'operator' => '==',
+                    'value' => 'front_page',
+                ),
+            ),
+        ),
+        'menu_order' => 2,
+        'position' => 'normal',
+        'style' => 'default',
+        'label_placement' => 'top',
+        'instruction_placement' => 'label',
+        'hide_on_screen' => '',
+        'active' => true,
+        'description' => 'Contact section fields for the front page',
+    ));
 }
 
 ?>

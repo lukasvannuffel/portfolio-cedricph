@@ -39,7 +39,7 @@
                     </svg>
                 </a>
             </div>
-
+            
             <!-- Separator Line -->
             <div class="footer-separator">
                 <div class="separator-line"></div>
