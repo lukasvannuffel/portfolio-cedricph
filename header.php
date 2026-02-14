@@ -34,6 +34,7 @@
                     'menu_class' => 'nav-menu',
                     'container' => false,
                     'fallback_cb' => false, // Geen fallback als menu niet bestaat
+                    'walker' => new Cedricph_Dropdown_Nav_Walker(),
                 ));
                 ?>
             </nav>

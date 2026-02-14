@@ -177,6 +177,43 @@ body {
     transform: scaleX(1);
 }
 
+/* Dropdown trigger (non-link parent, e.g. Portfolio) */
+.nav-menu .menu-item-dropdown-trigger {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    display: block;
+    position: relative;
+    transition: color var(--transition-base);
+    cursor: pointer;
+}
+
+.nav-menu .current-menu-ancestor > .menu-item-dropdown-trigger {
+    color: var(--color-accent-1);
+}
+
+.nav-menu .menu-item-dropdown-trigger::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    height: 1px;
+    background-color: var(--color-accent-1);
+    transform: scaleX(0);
+    transition: transform var(--transition-base);
+}
+
+.nav-menu .menu-item-dropdown-trigger:hover::after,
+.nav-menu .menu-item-dropdown-trigger:focus::after {
+    transform: scaleX(1);
+}
+
 /* Submenu (Dropdown) Styles */
 .nav-menu .sub-menu,
 .nav-menu .children {
@@ -376,12 +413,14 @@ body {
         text-align: center;
     }
 
-    .nav-menu a {
+    .nav-menu a,
+    .nav-menu .menu-item-dropdown-trigger {
         font-size: 1.5rem;
         padding: var(--spacing-md) var(--spacing-lg);
     }
 
-    .nav-menu a::after {
+    .nav-menu a::after,
+    .nav-menu .menu-item-dropdown-trigger::after {
         left: 50%;
         right: auto;
         width: 40px;
@@ -392,7 +431,10 @@ body {
     .nav-menu a:focus::after,
     .nav-menu .current-menu-item > a::after,
     .nav-menu .current_page_item > a::after,
-    .nav-menu .is-active > a::after {
+    .nav-menu .is-active > a::after,
+    .nav-menu .menu-item-dropdown-trigger:hover::after,
+    .nav-menu .menu-item-dropdown-trigger:focus::after,
+    .nav-menu .current-menu-ancestor > .menu-item-dropdown-trigger::after {
         transform: translateX(-50%) scaleX(1);
     }
 
@@ -415,7 +457,8 @@ body {
         gap: var(--spacing-sm);
     }
 
-    .nav-menu a {
+    .nav-menu a,
+    .nav-menu .menu-item-dropdown-trigger {
         font-size: 0.8125rem;
         padding: var(--spacing-xs);
     }
@@ -433,7 +476,8 @@ body {
         gap: var(--spacing-lg);
     }
 
-    .nav-menu a {
+    .nav-menu a,
+    .nav-menu .menu-item-dropdown-trigger {
         font-size: 0.875rem;
     }
 }
@@ -467,6 +511,7 @@ body {
     height: 100%;
     object-fit: cover;
     object-position: center;
+    transform-origin: center center;
 }
 
 .hero-overlay {

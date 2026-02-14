@@ -115,6 +115,55 @@ function mytheme_nav_menu_css_class($classes, $item, $args) {
 add_filter('nav_menu_css_class', 'mytheme_nav_menu_css_class', 10, 3);
 
 /**
+ * Custom walker: render parent items with URL "#" as a span (dropdown trigger only), not a link.
+ */
+class Cedricph_Dropdown_Nav_Walker extends Walker_Nav_Menu {
+
+    public function start_el(&$output, $item, $depth = 0, $args = null, $id = 0) {
+        if ($depth !== 0 || !$args || !isset($args->theme_location)) {
+            parent::start_el($output, $item, $depth, $args, $id);
+            return;
+        }
+
+        $is_dropdown_only = (
+            $args->theme_location === 'primary'
+            && in_array('menu-item-has-children', (array) $item->classes, true)
+            && $this->is_hash_only_url($item->url)
+        );
+
+        if (!$is_dropdown_only) {
+            parent::start_el($output, $item, $depth, $args, $id);
+            return;
+        }
+
+        $indent = ($depth) ? str_repeat("\t", $depth) : '';
+        $classes = empty($item->classes) ? array() : (array) $item->classes;
+        $classes[] = 'menu-item-' . $item->ID;
+
+        $class_names = implode(' ', apply_filters('nav_menu_css_class', array_filter($classes), $item, $args, $depth));
+        $class_names = $class_names ? ' class="' . esc_attr($class_names) . '"' : '';
+
+        $output .= $indent . '<li' . $class_names . '>';
+        $item_output = $args->before ?? '';
+        $item_output .= '<span class="menu-item-dropdown-trigger" role="button" tabindex="0">';
+        $item_output .= ($args->link_before ?? '') . apply_filters('the_title', $item->title, $item->ID) . ($args->link_after ?? '');
+        $item_output .= '</span>';
+        $item_output .= $args->after ?? '';
+        $output .= apply_filters('walker_nav_menu_start_el', $item_output, $item, $depth, $args);
+    }
+
+    private function is_hash_only_url($url) {
+        $url = trim((string) $url);
+        if ($url === '' || $url === '#') {
+            return true;
+        }
+        $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+        $fragment = parse_url($url, PHP_URL_FRAGMENT);
+        return $path === '' && ($fragment !== false || strpos($url, '#') !== false);
+    }
+}
+
+/**
  * Add body class for front page to help with styling
  */
 function mytheme_body_classes($classes) {

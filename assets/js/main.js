@@ -9,6 +9,7 @@
         initNavigation();
         initMobileMenu();
         initHeaderScroll();
+        initHeroBackgroundZoom();
         initActiveMenuState();
         initAboutImageHover();
     });
@@ -101,7 +102,7 @@
             }
         });
         
-        // Close menu when clicking on a nav link
+        // Close menu when clicking on a nav link (dropdown trigger is excluded so submenu can be used on mobile)
         const navLinks = mainNavigation.querySelectorAll('a');
         navLinks.forEach(function(link) {
             link.addEventListener('click', function() {
@@ -203,6 +204,42 @@
         
         // Check initial scroll position
         handleScroll();
+    }
+
+    /**
+     * Initialize hero background zoom on scroll
+     * Applies a subtle scale to the hero background image as the user scrolls
+     */
+    function initHeroBackgroundZoom() {
+        const hero = document.getElementById('hero');
+        const heroBgImage = document.querySelector('.hero-bg-image');
+
+        if (!hero || !heroBgImage) {
+            return;
+        }
+
+        const maxZoom = 0.15;
+
+        function updateHeroZoom() {
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+            const heroHeight = hero.offsetHeight;
+            const progress = Math.min(1, scrollY / heroHeight);
+            const scale = 1 + progress * maxZoom;
+            heroBgImage.style.transform = 'scale(' + scale + ')';
+        }
+
+        let ticking = false;
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    updateHeroZoom();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        updateHeroZoom();
     }
 
     /**

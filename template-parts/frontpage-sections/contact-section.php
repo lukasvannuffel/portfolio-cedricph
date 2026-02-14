@@ -19,7 +19,7 @@ $contact_description = get_field('contact_description');
                 </div>
             <?php else: ?>
                 <div class="contact-description">
-                    <p>Interested in working together? Fill out the form below and I'll get back to you within 24 hours.</p>
+                    <p>Interested in working together? <br> Fill out the form below and I'll get back to you as soon as possible.</p>
                 </div>
             <?php endif; ?>
             
