@@ -1,36 +1,26 @@
 <?php
 /**
  * Hero Section Template
- * Displays a full-height hero section with background image, title, subtitle, and CTA button
+ *
+ * Displays a full-height hero section with background image, title, subtitle, and CTA button.
+ * ACF fields: hero_background_image, hero_title, hero_subtitle, hero_cta_text, hero_cta_link, hero_show_scroll_indicator.
  */
 
-// Get ACF fields
 $background_image = get_field('hero_background_image');
-$title = get_field('hero_title');
-$subtitle = get_field('hero_subtitle');
-$cta_text = get_field('hero_cta_text');
+$title = get_field('hero_title') ?: __('Capturing Moments That Matter', 'cedricph');
+$subtitle = get_field('hero_subtitle') ?: __('Event & portrait photography that tells your story through authentic, cinematic imagery', 'cedricph');
+$cta_text = get_field('hero_cta_text') ?: __('View portfolio', 'cedricph');
 $cta_link = get_field('hero_cta_link');
 $show_scroll_indicator = get_field('hero_show_scroll_indicator');
 
-// Set defaults if fields are empty
-if (!$title) {
-    $title = 'Capturing Moments That Matter';
-}
-if (!$subtitle) {
-    $subtitle = 'Event & portrait photography that tells your story through authentic, cinematic imagery';
-}
-if (!$cta_text) {
-    $cta_text = 'View portfolio';
-}
 if ($cta_link === null || $cta_link === false) {
     $cta_link = array(
-        'url' => '#portfolio',
-        'title' => 'View portfolio',
-        'target' => ''
+        'url'    => '#portfolio',
+        'title'  => __('View portfolio', 'cedricph'),
+        'target' => '',
     );
 }
 
-// Get background image URL
 $bg_image_url = '';
 if ($background_image && is_array($background_image)) {
     $bg_image_url = $background_image['url'];
@@ -38,11 +28,10 @@ if ($background_image && is_array($background_image)) {
     $bg_image_url = $background_image;
 }
 
-// Prepare CTA link
 $cta_url = '#';
 $cta_target = '';
 if (is_array($cta_link)) {
-    $cta_url = $cta_link['url'] ? $cta_link['url'] : '#';
+    $cta_url = $cta_link['url'] ?: '#';
     $cta_target = $cta_link['target'] ? ' target="' . esc_attr($cta_link['target']) . '"' : '';
 } elseif (is_string($cta_link)) {
     $cta_url = $cta_link;

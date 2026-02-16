@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
-    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta charset="<?php echo esc_attr(get_bloginfo('charset')); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php wp_head(); ?>
 </head>
@@ -19,7 +19,8 @@
                 } else {
                     ?>
                     <a href="<?php echo esc_url(home_url('/')); ?>" class="site-title">
-                        <?php bloginfo('name'); ?>
+                        <span class="site-title-full"><?php echo esc_html(get_bloginfo('name', 'display')); ?></span>
+                        <span class="site-title-mobile">CP</span>
                     </a>
                     <?php
                 }
@@ -33,7 +34,7 @@
                     'theme_location' => 'primary',
                     'menu_class' => 'nav-menu',
                     'container' => false,
-                    'fallback_cb' => false, // Geen fallback als menu niet bestaat
+                    'fallback_cb' => false, // No fallback when menu is not set.
                     'walker' => new Cedricph_Dropdown_Nav_Walker(),
                 ));
                 ?>
@@ -57,3 +58,46 @@
         </div>
     </div>
 </header>
+
+<!-- Mobile Navigation Overlay -->
+<nav class="mobile-nav-overlay" id="mobileNav">
+    <button class="mobile-nav-close" id="mobileNavClose" aria-label="Close menu">
+        <span></span>
+        <span></span>
+    </button>
+    <div class="mobile-nav-accent-line"></div>
+    <div class="mobile-nav-container">
+        <ul class="mobile-nav-list">
+            <li class="mobile-nav-item">
+                <a href="<?php echo esc_url(home_url('/#hero')); ?>" class="mobile-nav-link"><?php esc_html_e('Home', 'cedricph'); ?></a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="<?php echo esc_url(home_url('/#about')); ?>" class="mobile-nav-link"><?php esc_html_e('About', 'cedricph'); ?></a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="<?php echo esc_url(home_url('/#featured')); ?>" class="mobile-nav-link"><?php esc_html_e('Featured', 'cedricph'); ?></a>
+            </li>
+            <li class="mobile-nav-item mobile-nav-has-dropdown" id="mobilePortfolioItem">
+                <div class="mobile-dropdown-toggle">
+                    <a href="#" class="mobile-nav-link"><?php esc_html_e('Portfolio', 'cedricph'); ?></a>
+                </div>
+                <ul class="mobile-dropdown-menu">
+                    <li class="mobile-dropdown-item">
+                        <a href="<?php echo esc_url(cedricph_get_portfolio_page_url('analog')); ?>" class="mobile-dropdown-link"><?php esc_html_e('Analog', 'cedricph'); ?></a>
+                    </li>
+                    <li class="mobile-dropdown-item">
+                        <a href="<?php echo esc_url(cedricph_get_portfolio_page_url('digital')); ?>" class="mobile-dropdown-link"><?php esc_html_e('Digital', 'cedricph'); ?></a>
+                    </li>
+                </ul>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="<?php echo esc_url(home_url('/#contact')); ?>" class="mobile-nav-link"><?php esc_html_e('Contact', 'cedricph'); ?></a>
+            </li>
+        </ul>
+        <div class="mobile-nav-footer">
+            <p class="mobile-nav-footer-text">
+                <?php echo esc_html__('Capturing moments through the lens.', 'cedricph'); ?>
+            </p>
+        </div>
+    </div>
+</nav>

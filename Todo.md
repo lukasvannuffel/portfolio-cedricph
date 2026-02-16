@@ -12,6 +12,7 @@
 
 ### Featured section
 - [ ] 3 beste projecten tonen van Portfolio
+    ---> deze moeten ze kiezen in de CPT voor projecten
 - [ ] Instagram embedding
 
 ### Contact section
