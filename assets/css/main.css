@@ -211,8 +211,15 @@ body {
 }
 
 .site-branding .custom-logo {
-    max-height: 40px;
+    max-height: 52px;
     width: auto;
+    /* Black logo: show as white by default on dark background */
+    filter: invert(1);
+}
+
+.site-branding .custom-logo-link:hover .custom-logo {
+    /* Black logo → muted tan #D4A574 */
+    filter: brightness(0) saturate(100%) invert(70%) sepia(35%) saturate(450%) hue-rotate(350deg);
 }
 
 /* Hide mobile monogram by default (show full title on desktop) */
@@ -569,7 +576,7 @@ body {
     }
 
     .site-branding .custom-logo {
-        max-height: 32px;
+        max-height: 40px;
     }
 
     /* Hide desktop navigation */
@@ -1807,8 +1814,15 @@ section[id],
 }
 
 .footer-branding .custom-logo {
-    max-height: 60px;
+    max-height: 72px;
     width: auto;
+    /* Black logo: show as white by default on dark background */
+    filter: invert(1);
+}
+
+.footer-branding .custom-logo-link:hover .custom-logo {
+    /* Black logo → muted tan #D4A574 */
+    filter: brightness(0) saturate(100%) invert(70%) sepia(35%) saturate(450%) hue-rotate(350deg);
 }
 
 /* Footer Social Icons */
@@ -1905,7 +1919,7 @@ section[id],
     }
 
     .footer-branding .custom-logo {
-        max-height: 50px;
+        max-height: 60px;
     }
 
     .footer-social {
@@ -3463,11 +3477,14 @@ section[id],
     font-family: var(--font-body);
     font-size: 0.9375rem;
     font-weight: 500;
+    text-align: center;
     text-decoration: none;
     border: 2px solid var(--color-accent-1);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     cursor: pointer;
     transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-download-primary {
@@ -3478,8 +3495,7 @@ section[id],
 .btn-download-primary:hover {
     background: transparent;
     color: var(--color-accent-1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    transform: translateX(4px);
 }
 
 .btn-download-secondary {
@@ -3487,8 +3503,24 @@ section[id],
     color: var(--color-accent-1);
 }
 
+.btn-download-secondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--color-accent-1);
+    transition: left var(--transition-base);
+    z-index: -1;
+}
+
+.btn-download-secondary:hover::before {
+    left: 0;
+}
+
 .btn-download-secondary:hover {
-    background: rgba(212, 175, 55, 0.1);
+    color: var(--color-bg-primary);
     transform: translateX(4px);
 }
 

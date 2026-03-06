@@ -15,8 +15,11 @@ function mytheme_setup(): void {
     // Featured images
     add_theme_support('post-thumbnails');
     
-    // Custom logo
-    add_theme_support('custom-logo');
+    // Custom logo (flex dimensions allow SVG without cropping)
+    add_theme_support('custom-logo', array(
+        'flex-height' => true,
+        'flex-width'  => true,
+    ));
     
     // HTML5 support
     add_theme_support('html5', array(
@@ -33,6 +36,150 @@ function mytheme_setup(): void {
     ));
 }
 add_action('after_setup_theme', 'mytheme_setup');
+
+/**
+ * Allows SVG uploads in the Media Library and Customizer (for custom logo).
+ *
+ * @param array<string, string> $mimes Allowed MIME types.
+ * @return array<string, string>
+ */
+function cedricph_allow_svg_upload(array $mimes): array {
+    $mimes['svg']  = 'image/svg+xml';
+    $mimes['svgz'] = 'image/svg+xml';
+    return $mimes;
+}
+add_filter('upload_mimes', 'cedricph_allow_svg_upload');
+
+/**
+ * Sanitizes SVG file content on upload (removes scripts and event handlers).
+ *
+ * @param string $content Raw SVG file content.
+ * @return string|null Sanitized content or null if invalid/dangerous.
+ */
+function cedricph_sanitize_svg_content(string $content): ?string {
+    if (trim($content) === '') {
+        return null;
+    }
+
+    // Remove script elements and their content
+    $content = preg_replace('/<script\b[^>]*>[\s\S]*?<\/script>/iu', '', $content);
+    if ($content === null) {
+        return null;
+    }
+
+    // Remove javascript: and data: URLs in attributes
+    $content = preg_replace('/\s*(href|xlink:href)\s*=\s*["\']?\s*javascript:[^"\']*["\']?/iu', '', $content);
+    if ($content === null) {
+        return null;
+    }
+    $content = preg_replace('/\s*(href|xlink:href)\s*=\s*["\']?\s*data:text\/html[^"\']*["\']?/iu', '', $content);
+    if ($content === null) {
+        return null;
+    }
+
+    // Remove event handler attributes (onload, onerror, onclick, etc.)
+    $content = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/iu', '', $content);
+    if ($content === null) {
+        return null;
+    }
+
+    // Remove <foreignObject> and content (can embed HTML/scripts)
+    $content = preg_replace('/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/iu', '', $content);
+    if ($content === null) {
+        return null;
+    }
+
+    return $content;
+}
+
+/**
+ * Sanitizes SVG uploads before WordPress saves the file.
+ *
+ * @param array<string, mixed> $file Upload file data.
+ * @return array<string, mixed>
+ */
+function cedricph_sanitize_svg_upload(array $file): array {
+    if (!isset($file['type']) || $file['type'] !== 'image/svg+xml') {
+        return $file;
+    }
+
+    if (!isset($file['tmp_name']) || !is_readable($file['tmp_name'])) {
+        return $file;
+    }
+
+    $content = file_get_contents($file['tmp_name']);
+    if ($content === false) {
+        return $file;
+    }
+
+    $sanitized = cedricph_sanitize_svg_content($content);
+    if ($sanitized === null) {
+        $file['error'] = __('This SVG file could not be sanitized and was rejected for security.', 'cedricph');
+        return $file;
+    }
+
+    if (file_put_contents($file['tmp_name'], $sanitized) === false) {
+        $file['error'] = __('Failed to save sanitized SVG.', 'cedricph');
+        return $file;
+    }
+
+    return $file;
+}
+add_filter('wp_handle_upload_prefilter', 'cedricph_sanitize_svg_upload');
+
+/**
+ * Returns full URL and dimensions for SVG attachments so wp_get_attachment_image works.
+ *
+ * @param array|false $out      Short-circuit return.
+ * @param int         $id       Attachment ID.
+ * @param string|int  $size     Requested size.
+ * @return array|false [ src, width, height ] or false.
+ */
+function cedricph_image_downsize_svg($out, int $id, $size) {
+    if ($out !== false) {
+        return $out;
+    }
+
+    $post = get_post($id);
+    if (!$post || $post->post_mime_type !== 'image/svg+xml') {
+        return false;
+    }
+
+    $src = wp_get_attachment_url($id);
+    if (!$src) {
+        return false;
+    }
+
+    $width  = 1;
+    $height = 1;
+    $meta   = wp_get_attachment_metadata($id);
+    if (is_array($meta) && isset($meta['width'], $meta['height'])) {
+        $width  = (int) $meta['width'];
+        $height = (int) $meta['height'];
+    }
+
+    return array($src, $width, $height, false);
+}
+add_filter('image_downsize', 'cedricph_image_downsize_svg', 10, 3);
+
+/**
+ * Removes width/height from custom logo img when logo is SVG so CSS can size it.
+ *
+ * @param array<string, string> $attr   Image attributes.
+ * @param int                   $logoId Attachment ID.
+ * @param int                   $blogId Blog ID.
+ * @return array<string, string>
+ */
+function cedricph_custom_logo_svg_attributes(array $attr, int $logoId, int $blogId = 0): array {
+    $url = wp_get_attachment_url($logoId);
+    if (!$url || strtolower((string) pathinfo($url, PATHINFO_EXTENSION)) !== 'svg') {
+        return $attr;
+    }
+
+    unset($attr['width'], $attr['height']);
+    return $attr;
+}
+add_filter('get_custom_logo_image_attributes', 'cedricph_custom_logo_svg_attributes', 10, 3);
 
 /**
  * Registers the Project custom post type.
