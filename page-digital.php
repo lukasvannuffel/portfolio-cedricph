@@ -14,8 +14,10 @@ get_header();
             <p class="archive-description"><?php echo esc_html__('Digital photography projects captured with modern equipment.', 'cedricph'); ?></p>
         </header>
 
+        <?php get_template_part('template-parts/portfolio-filters'); ?>
+
         <!-- Projects grid -->
-        <div class="projects-grid masonry-grid">
+        <div id="portfolio-grid" class="projects-grid masonry-grid">
             <?php
             $args = array(
                 'post_type'      => 'project',
@@ -59,8 +61,18 @@ get_header();
                             $featured_image = $match[1];
                         }
                     }
+
+                    $raw_categories = get_field('project_categories', $pid);
+                    $categories_attr = '';
+                    if (!empty($raw_categories) && is_array($raw_categories)) {
+                        $categories_attr = implode(' ', array_map('sanitize_html_class', $raw_categories));
+                    }
                     ?>
-                    <article class="project-card">
+                    <article
+                        class="project-card"
+                        data-title="<?php echo esc_attr(strtolower(get_the_title())); ?>"
+                        data-categories="<?php echo esc_attr($categories_attr); ?>"
+                    >
                         <a href="<?php the_permalink(); ?>" class="project-card-link">
                             <?php if ($thumb_id): ?>
                                 <?php echo wp_get_attachment_image($thumb_id, 'large', false, array('class' => 'project-image', 'loading' => 'lazy', 'decoding' => 'async')); ?>

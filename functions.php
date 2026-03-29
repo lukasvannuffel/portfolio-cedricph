@@ -1091,6 +1091,47 @@ if (function_exists('acf_add_local_field_group')) {
         'active' => true,
         'description' => 'Fields for project posts',
     ));
+
+    acf_add_local_field_group(array(
+        'key'    => 'group_project_categories',
+        'title'  => 'Project Categories',
+        'fields' => array(
+            array(
+                'key'           => 'field_project_categories',
+                'label'         => 'Categories',
+                'name'          => 'project_categories',
+                'type'          => 'checkbox',
+                'instructions'  => 'Select the categories that best describe this project. Used for portfolio filtering.',
+                'required'      => 0,
+                'choices'       => array(
+                    'portrait'   => 'Portrait',
+                    'events'     => 'Events',
+                    'commercial' => 'Commercial',
+                ),
+                'allow_custom'  => 0,
+                'layout'        => 'horizontal',
+                'toggle'        => 0,
+                'return_format' => 'value',
+                'save_custom'   => 0,
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param'    => 'post_type',
+                    'operator' => '==',
+                    'value'    => 'project',
+                ),
+            ),
+        ),
+        'menu_order'            => 1,
+        'position'              => 'side',
+        'style'                 => 'default',
+        'label_placement'       => 'top',
+        'instruction_placement' => 'label',
+        'active'                => true,
+        'description'           => 'Category tags for portfolio filtering',
+    ));
 }
 
 // ===================================

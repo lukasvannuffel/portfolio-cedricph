@@ -26,6 +26,7 @@
         activeMenuState: { init: () => {} },
         aboutImageHover: { init: () => {} },
         projectCarousel: { init: () => {} },
+        portfolioFilter: { init: () => {} },
     };
 
     /**
@@ -660,6 +661,194 @@
         });
     };
 
+    /**
+     * Client-side portfolio filter: search by title + multi-select category.
+     * Reads data-title and data-categories attributes on .project-card elements.
+     * Runs on archive pages only (exits early when #portfolio-grid is absent).
+     */
+    ThemeInit.portfolioFilter.init = function initPortfolioFilter() {
+        const grid = document.getElementById('portfolio-grid');
+        if (!grid) {
+            return;
+        }
+
+        const filterWrap    = document.querySelector('.portfolio-filters');
+        const searchInput   = document.querySelector('.portfolio-filters__search-input');
+        const clearBtn      = document.querySelector('.portfolio-filters__search-clear');
+        const dropdownBtn   = document.querySelector('.portfolio-filters__dropdown-btn');
+        const dropdownLabel = document.querySelector('.portfolio-filters__dropdown-label');
+        const listbox       = document.getElementById('portfolio-filter-listbox');
+        const options       = listbox ? Array.from(listbox.querySelectorAll('.portfolio-filters__option')) : [];
+        const activeTagsEl  = document.querySelector('.portfolio-filters__active-tags');
+
+        if (!filterWrap || !searchInput || !dropdownBtn || !listbox) {
+            return;
+        }
+
+        let selectedCats  = [];
+        let searchQuery   = '';
+        let noResultsNode = null;
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function getCards() {
+            return Array.from(grid.querySelectorAll('.project-card'));
+        }
+
+        function applyFilters() {
+            const cards = getCards();
+            let visibleCount = 0;
+
+            cards.forEach((card) => {
+                const titleAttr = card.dataset.title || '';
+                const catAttr   = card.dataset.categories || '';
+                const cardCats  = catAttr ? catAttr.split(' ').filter(Boolean) : [];
+
+                const searchMatch = searchQuery === '' || titleAttr.includes(searchQuery);
+                const catMatch    = selectedCats.length === 0 || selectedCats.some((cat) => cardCats.includes(cat));
+                const visible     = searchMatch && catMatch;
+
+                card.classList.toggle('is-hidden', !visible);
+                if (visible) {
+                    visibleCount += 1;
+                }
+            });
+
+            if (noResultsNode) {
+                noResultsNode.remove();
+                noResultsNode = null;
+            }
+            if (visibleCount === 0) {
+                noResultsNode = document.createElement('p');
+                noResultsNode.className = 'portfolio-no-results';
+                noResultsNode.innerHTML =
+                    '<strong>' + (searchQuery ? 'No results for \u201C' + searchQuery + '\u201D' : 'No projects found') + '</strong>' +
+                    'Try a different search term or remove active filters.';
+                grid.appendChild(noResultsNode);
+            }
+        }
+
+        let searchDebounceTimer = null;
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                searchQuery = searchInput.value.trim().toLowerCase();
+                if (clearBtn) {
+                    clearBtn.hidden = searchQuery === '';
+                }
+                applyFilters();
+            }, 180);
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                searchQuery = '';
+                clearBtn.hidden = true;
+                searchInput.focus();
+                applyFilters();
+            });
+        }
+
+        function openDropdown() {
+            dropdownBtn.setAttribute('aria-expanded', 'true');
+            listbox.classList.add('is-open');
+        }
+
+        function closeDropdown() {
+            dropdownBtn.setAttribute('aria-expanded', 'false');
+            listbox.classList.remove('is-open');
+        }
+
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdownBtn.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!filterWrap.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+                dropdownBtn.focus();
+            }
+        });
+
+        function syncDropdownUI() {
+            options.forEach((opt) => {
+                opt.setAttribute('aria-selected', String(selectedCats.includes(opt.dataset.value)));
+            });
+
+            if (dropdownLabel) {
+                if (selectedCats.length === 0) {
+                    dropdownLabel.textContent = 'All Categories';
+                } else if (selectedCats.length === 1) {
+                    dropdownLabel.textContent = capitalize(selectedCats[0]);
+                } else {
+                    dropdownLabel.textContent = selectedCats.length + ' Categories';
+                }
+            }
+
+            if (activeTagsEl) {
+                activeTagsEl.innerHTML = '';
+                selectedCats.forEach((cat) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'portfolio-filters__tag';
+                    tag.innerHTML =
+                        '<span class="portfolio-filters__tag-label">' + capitalize(cat) + '</span>' +
+                        '<button class="portfolio-filters__tag-remove" type="button" aria-label="Remove ' + capitalize(cat) + ' filter">' +
+                        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                        '</button>';
+                    tag.querySelector('.portfolio-filters__tag-remove').addEventListener('click', () => {
+                        selectedCats = selectedCats.filter((c) => c !== cat);
+                        syncDropdownUI();
+                        applyFilters();
+                    });
+                    activeTagsEl.appendChild(tag);
+                });
+            }
+        }
+
+        function toggleOption(optionEl) {
+            const value = optionEl.dataset.value;
+            if (!value) {
+                return;
+            }
+            if (selectedCats.includes(value)) {
+                selectedCats = selectedCats.filter((c) => c !== value);
+            } else {
+                selectedCats = [...selectedCats, value];
+            }
+            syncDropdownUI();
+            applyFilters();
+        }
+
+        options.forEach((opt) => {
+            opt.addEventListener('click', () => toggleOption(opt));
+            opt.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    toggleOption(opt);
+                }
+            });
+        });
+
+        syncDropdownUI();
+        applyFilters();
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         populateDomCache();
         ThemeInit.navigation.init();
@@ -670,5 +859,6 @@
         ThemeInit.activeMenuState.init();
         ThemeInit.aboutImageHover.init();
         ThemeInit.projectCarousel.init();
+        ThemeInit.portfolioFilter.init();
     });
 })();
