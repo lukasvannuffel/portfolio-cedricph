@@ -1,6 +1,6 @@
 <?php get_header(); ?>
 
-<main class="front-page">
+<main class="front-page" role="main">
     <?php
     // Include hero section
     get_template_part('template-parts/frontpage-sections/hero-section', 'hero');

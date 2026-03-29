@@ -24,7 +24,7 @@ $contact_description = get_field('contact_description');
                 </div>
             <?php endif; ?>
 
-            <div class="contact-form-container">
+            <div class="contact-form-container" aria-label="<?php esc_attr_e('Contact form', 'cedricph'); ?>">
                 <?php echo do_shortcode('[contact-form-7 id="7a66514" title="Contact"]'); ?>
             </div>
         </div>

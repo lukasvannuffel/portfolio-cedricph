@@ -7,9 +7,8 @@
 get_header();
 ?>
 
-<main class="portfolio-archive digital-archive">
+<main class="portfolio-archive digital-archive" role="main">
     <div class="container">
-        <!-- Page header -->
         <header class="archive-header">
             <h1 class="archive-title"><?php echo esc_html__('Digital Photography', 'cedricph'); ?></h1>
             <p class="archive-description"><?php echo esc_html__('Digital photography projects captured with modern equipment.', 'cedricph'); ?></p>
@@ -50,8 +49,10 @@ get_header();
             } else {
                 while ($digital_query->have_posts()) {
                     $digital_query->the_post();
-                    $featured_image = get_the_post_thumbnail_url(get_the_ID(), 'large');
-                    if (!$featured_image) {
+                    $pid = get_the_ID();
+                    $thumb_id = get_post_thumbnail_id($pid);
+                    $featured_image = $thumb_id ? null : get_the_post_thumbnail_url($pid, 'large');
+                    if (!$featured_image && !$thumb_id) {
                         $content = get_the_content();
                         preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]*/i', $content, $match);
                         if (!empty($match[1])) {
@@ -61,12 +62,15 @@ get_header();
                     ?>
                     <article class="project-card">
                         <a href="<?php the_permalink(); ?>" class="project-card-link">
-                            <?php if ($featured_image): ?>
+                            <?php if ($thumb_id): ?>
+                                <?php echo wp_get_attachment_image($thumb_id, 'large', false, array('class' => 'project-image', 'loading' => 'lazy', 'decoding' => 'async')); ?>
+                            <?php elseif ($featured_image): ?>
                                 <img
                                     src="<?php echo esc_url($featured_image); ?>"
                                     alt="<?php the_title_attribute(); ?>"
                                     class="project-image"
                                     loading="lazy"
+                                    decoding="async"
                                 >
                             <?php endif; ?>
                             <div class="project-overlay">

@@ -3,10 +3,21 @@
 <head>
     <meta charset="<?php echo esc_attr(get_bloginfo('charset')); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+        .page-load-reveal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #1C1C1C;
+            pointer-events: none;
+        }
+    </style>
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
+
+<div class="page-load-reveal" aria-hidden="true"></div>
 
 <header class="site-header">
     <div class="container">
@@ -28,7 +39,7 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="main-navigation">
+            <nav class="main-navigation" role="navigation" aria-label="<?php esc_attr_e('Main navigation', 'cedricph'); ?>">
                 <?php
                 wp_nav_menu(array(
                     'theme_location' => 'primary',
@@ -60,7 +71,7 @@
 </header>
 
 <!-- Mobile Navigation Overlay -->
-<nav class="mobile-nav-overlay" id="mobileNav">
+<nav class="mobile-nav-overlay" id="mobileNav" role="navigation" aria-label="<?php esc_attr_e('Mobile navigation', 'cedricph'); ?>">
     <button class="mobile-nav-close" id="mobileNavClose" aria-label="Close menu">
         <span></span>
         <span></span>

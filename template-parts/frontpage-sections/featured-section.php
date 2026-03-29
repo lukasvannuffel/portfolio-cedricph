@@ -25,25 +25,36 @@ $featured_projects = array_filter(array($project_1, $project_2, $project_3));
                     $project_id = $project->ID;
                     $project_title = get_the_title($project_id);
                     $project_permalink = get_permalink($project_id);
-                    $project_type = get_field('project_type', $project_id);
+                    $project_type = get_the_terms($project_id, 'project_type');
+                    $project_type_name = ($project_type && !is_wp_error($project_type)) ? $project_type[0]->name : '';
                     $thumbnail_id = get_post_thumbnail_id($project_id);
-                    $image_url = wp_get_attachment_image_url($thumbnail_id, 'large');
-                    $image_alt = get_post_meta($thumbnail_id, '_wp_attachment_image_alt', true) ?: $project_title;
                     ?>
                     <article class="project-card">
                         <a href="<?php echo esc_url($project_permalink); ?>" class="project-card-link">
-                            <?php if ($image_url): ?>
+                            <?php
+                            if ($thumbnail_id) {
+                                echo wp_get_attachment_image($thumbnail_id, 'large', false, array('class' => 'project-image', 'loading' => 'lazy', 'decoding' => 'async'));
+                            } else {
+                                $fallback_url = '';
+                                $content = get_post_field('post_content', $project_id);
+                                if (preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]*/i', $content, $m)) {
+                                    $fallback_url = $m[1];
+                                }
+                                if ($fallback_url): ?>
                                 <img
-                                    src="<?php echo esc_url($image_url); ?>"
-                                    alt="<?php echo esc_attr($image_alt); ?>"
+                                    src="<?php echo esc_url($fallback_url); ?>"
+                                    alt="<?php echo esc_attr($project_title); ?>"
                                     class="project-image"
                                     loading="lazy"
+                                    decoding="async"
                                 >
-                            <?php endif; ?>
+                                <?php endif;
+                            }
+                            ?>
                             <div class="project-overlay">
                                 <h3 class="project-title"><?php echo esc_html($project_title); ?></h3>
-                                <?php if ($project_type): ?>
-                                    <span class="project-category"><?php echo esc_html($project_type); ?></span>
+                                <?php if ($project_type_name): ?>
+                                    <span class="project-category"><?php echo esc_html($project_type_name); ?></span>
                                 <?php endif; ?>
                             </div>
                         </a>

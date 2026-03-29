@@ -8,6 +8,9 @@
 
     const SCROLL_THRESHOLD = 50;
     const HERO_MAX_ZOOM = 0.15;
+    const LOGO_SCALE_MIN = 0.5;
+    const LOGO_FADE_MIN = 0.25;
+    const LOGO_TRANSLATE_VH = 10;
     const RESIZE_DEBOUNCE_MS = 250;
     const DESKTOP_BREAKPOINT = 768;
     const MIN_SWIPE_DISTANCE = 50;
@@ -19,6 +22,7 @@
         mobileMenu: { init: () => {}, open: () => {}, close: () => {} },
         headerScroll: { init: () => {} },
         heroZoom: { init: () => {} },
+        heroLogoScroll: { init: () => {} },
         activeMenuState: { init: () => {} },
         aboutImageHover: { init: () => {} },
         projectCarousel: { init: () => {} },
@@ -37,6 +41,7 @@
             mobilePortfolioItem: document.getElementById('mobilePortfolioItem'),
             hero: document.getElementById('hero'),
             heroBgImage: document.querySelector('.hero-bg-image'),
+            heroLogo: document.querySelector('.hero-title--logo'),
             aboutImage: document.querySelector('.about-image'),
         };
     }
@@ -339,6 +344,36 @@
     };
 
     /**
+     * Initialize hero logo scroll effect: scale down, move up, fade as user scrolls through hero.
+     */
+    ThemeInit.heroLogoScroll.init = function initHeroLogoScroll() {
+        const { hero, heroLogo } = ThemeInit.dom;
+        if (!hero || !heroLogo) {
+            return;
+        }
+
+        const HERO_LOGO_ENTRANCE_MS = 1400;
+
+        const updateLogoScroll = () => {
+            const scrollY = window.pageYOffset ?? document.documentElement.scrollTop;
+            const heroHeight = hero.offsetHeight;
+            let progress = Math.min(1, scrollY / heroHeight);
+            progress = 1 - (1 - progress) ** 1.2;
+            const scale = 1 - progress * (1 - LOGO_SCALE_MIN);
+            const translateY = -progress * LOGO_TRANSLATE_VH;
+            const opacity = 1 - progress * (1 - LOGO_FADE_MIN);
+            heroLogo.style.transform = `scale(${scale}) translateY(${translateY}vh)`;
+            heroLogo.style.opacity = String(opacity);
+        };
+
+        window.addEventListener('scroll', createRafScrollHandler(updateLogoScroll));
+
+        setTimeout(function runAfterEntrance() {
+            updateLogoScroll();
+        }, HERO_LOGO_ENTRANCE_MS);
+    };
+
+    /**
      * Find the menu item <li> for a given hash (or home). Used by active menu state.
      * @param {Element} navMenu - The .nav-menu element.
      * @param {string} hash - Normalized hash (e.g. '' for home, '#about' for section).
@@ -518,10 +553,13 @@
         }
 
         carousels.forEach((carousel) => {
+            const wrapper = carousel.closest('.project-carousel-wrapper');
             const slides = carousel.querySelectorAll('.carousel-slide');
             const prevBtn = carousel.querySelector('.carousel-prev');
             const nextBtn = carousel.querySelector('.carousel-next');
-            const indicators = carousel.querySelectorAll('.carousel-indicator');
+            const indicators = wrapper
+                ? wrapper.querySelectorAll('.carousel-thumbnail')
+                : carousel.querySelectorAll('.carousel-indicator');
             const counter = carousel.querySelector('.carousel-counter');
 
             if (!slides.length) {
@@ -549,6 +587,11 @@
                 if (indicators.length) {
                     indicators[currentSlide].classList.remove('active');
                     indicators[nextIndex].classList.add('active');
+                    indicators[nextIndex].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center',
+                    });
                 }
 
                 if (counter) {
@@ -623,6 +666,7 @@
         ThemeInit.mobileMenu.init();
         ThemeInit.headerScroll.init();
         ThemeInit.heroZoom.init();
+        ThemeInit.heroLogoScroll.init();
         ThemeInit.activeMenuState.init();
         ThemeInit.aboutImageHover.init();
         ThemeInit.projectCarousel.init();

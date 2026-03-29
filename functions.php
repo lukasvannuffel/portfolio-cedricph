@@ -46,6 +46,7 @@ add_action('after_setup_theme', 'mytheme_setup');
 function cedricph_allow_svg_upload(array $mimes): array {
     $mimes['svg']  = 'image/svg+xml';
     $mimes['svgz'] = 'image/svg+xml';
+    $mimes['webp'] = 'image/webp';
     return $mimes;
 }
 add_filter('upload_mimes', 'cedricph_allow_svg_upload');
@@ -292,10 +293,10 @@ add_action('init', 'cedricph_register_project_type_taxonomy', 0);
 
 /**
  * Extracts gallery images from project post content (gallery shortcode or img tags).
- * Returns an array of items with 'url' and 'alt' keys, with duplicates removed.
+ * Returns an array of items with 'url', 'alt' and optionally 'id' (attachment ID), with duplicates removed.
  *
  * @param int $postId Post ID (project).
- * @return array<int, array{url: string, alt: string}>
+ * @return array<int, array{url: string, alt: string, id?: int}>
  */
 function cedricph_get_project_gallery_images(int $postId): array {
     $content = get_post_field('post_content', $postId);
@@ -315,6 +316,7 @@ function cedricph_get_project_gallery_images(int $postId): array {
                 $gallery[] = array(
                     'url' => $full_url,
                     'alt' => $alt ?: $post_title,
+                    'id'  => $attachment_id,
                 );
             }
         }
@@ -334,6 +336,7 @@ function cedricph_get_project_gallery_images(int $postId): array {
                         $gallery[] = array(
                             'url' => $full_url,
                             'alt' => $alt ?: $post_title,
+                            'id'  => $attachment_id,
                         );
                         $image_added = true;
                     }
@@ -507,20 +510,23 @@ add_action('init', 'cedricph_create_default_project_types', 11);
  * @return void
  */
 function mytheme_scripts(): void {
-    // Main CSS
+    $main_css_path = get_template_directory() . '/assets/css/main.css';
+    $main_js_path  = get_template_directory() . '/assets/js/main.js';
+
+    // Main CSS (version = file mtime for cache busting when file changes)
     wp_enqueue_style(
         'main-style',
         get_template_directory_uri() . '/assets/css/main.css',
         array(),
-        '2.0.0'
+        file_exists($main_css_path) ? (string) filemtime($main_css_path) : '1.0.0'
     );
 
-    // Main JS
+    // Main JS (version = file mtime for cache busting when file changes)
     wp_enqueue_script(
         'main-script',
         get_template_directory_uri() . '/assets/js/main.js',
         array(),
-        '2.0.0',
+        file_exists($main_js_path) ? (string) filemtime($main_js_path) : '1.0.0',
         true
     );
 }
@@ -717,6 +723,17 @@ if (function_exists('acf_add_local_field_group')) {
                 'name' => 'hero_background_image',
                 'type' => 'image',
                 'instructions' => 'Upload a background image for the hero section. Recommended size: 1920x1080px or larger.',
+                'required' => 0,
+                'return_format' => 'array',
+                'preview_size' => 'medium',
+                'library' => 'all',
+            ),
+            array(
+                'key' => 'field_hero_logo',
+                'label' => 'Hero Logo',
+                'name' => 'hero_logo',
+                'type' => 'image',
+                'instructions' => 'Logo shown instead of the text title. Leave empty to use the title below.',
                 'required' => 0,
                 'return_format' => 'array',
                 'preview_size' => 'medium',
@@ -1054,19 +1071,6 @@ if (function_exists('acf_add_local_field_group')) {
                 'instructions' => 'Link to the Instagram post for this project (if applicable)',
                 'required' => 0,
                 'placeholder' => 'https://www.instagram.com/p/...',
-            ),
-            array(
-                'key' => 'field_project_border_radius',
-                'label' => 'Image Border Radius',
-                'name' => 'project_border_radius',
-                'type' => 'number',
-                'instructions' => 'Border radius for project images in pixels (0 = square corners, 8 = default rounded, 50 = very rounded)',
-                'required' => 0,
-                'default_value' => 8,
-                'min' => 0,
-                'max' => 50,
-                'step' => 1,
-                'append' => 'px',
             ),
         ),
         'location' => array(
@@ -1780,3 +1784,716 @@ function cedricph_register_private_project_acf_fields(): void {
     ));
 }
 add_action('acf/init', 'cedricph_register_private_project_acf_fields');
+
+// ===================================
+// SEO, STRUCTURED DATA & META
+// ===================================
+
+/**
+ * Returns social profile URLs for schema (sameAs). Defaults from footer; filterable.
+ *
+ * @return array<int, string>
+ */
+function cedricph_get_social_same_as_urls(): array {
+    $urls = array(
+        'https://www.instagram.com',
+        'https://www.linkedin.com',
+    );
+    return array_values(array_filter((array) apply_filters('cedricph_social_same_as_urls', $urls)));
+}
+
+/**
+ * Returns meta description for current request (max 160 chars, no tags).
+ *
+ * @return string
+ */
+function cedricph_get_meta_description(): string {
+    $description = '';
+
+    if (is_front_page()) {
+        $subtitle = function_exists('get_field') ? get_field('hero_subtitle') : null;
+        $description = is_string($subtitle) ? $subtitle : get_bloginfo('description', 'display');
+    } elseif (is_singular('project')) {
+        $desc = function_exists('get_field') ? get_field('project_description') : null;
+        if (is_string($desc)) {
+            $description = wp_strip_all_tags($desc);
+        }
+        if ($description === '') {
+            $description = get_the_excerpt();
+        }
+    } elseif (is_page()) {
+        $template = get_page_template_slug();
+        if ($template === 'page-analog.php') {
+            $description = __('Film photography projects captured on analog cameras.', 'cedricph');
+        } elseif ($template === 'page-digital.php') {
+            $description = __('Digital photography projects captured with modern equipment.', 'cedricph');
+        } else {
+            $description = get_the_excerpt();
+        }
+    } else {
+        $description = get_bloginfo('description', 'display');
+    }
+
+    $description = wp_strip_all_tags($description);
+    if (mb_strlen($description) > 160) {
+        $description = mb_substr($description, 0, 157) . '...';
+    }
+    return $description;
+}
+
+/**
+ * Returns URL for OG/Twitter image for current request.
+ *
+ * @return string
+ */
+function cedricph_get_og_image_url(): string {
+    if (is_front_page()) {
+        $hero = function_exists('get_field') ? get_field('hero_background_image') : null;
+        if (is_array($hero) && !empty($hero['url'])) {
+            return $hero['url'];
+        }
+        if (is_numeric($hero)) {
+            $url = wp_get_attachment_image_url((int) $hero, 'full');
+            return $url ?: '';
+        }
+        if (is_string($hero)) {
+            return $hero;
+        }
+    }
+
+    if (is_singular('project')) {
+        $thumb = get_the_post_thumbnail_url(get_queried_object_id(), 'large');
+        if ($thumb) {
+            return $thumb;
+        }
+        $gallery = cedricph_get_project_gallery_images(get_queried_object_id());
+        if (!empty($gallery)) {
+            return $gallery[0]['url'];
+        }
+    }
+
+    if (is_page()) {
+        $template = get_page_template_slug();
+        if ($template === 'page-analog.php' || $template === 'page-digital.php') {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => 1,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+                'tax_query'      => array(
+                    array(
+                        'taxonomy' => 'project_type',
+                        'field'    => 'slug',
+                        'terms'    => $template === 'page-analog.php' ? 'analog' : 'digital',
+                    ),
+                    array(
+                        'taxonomy' => 'project_type',
+                        'field'    => 'slug',
+                        'terms'    => 'private',
+                        'operator' => 'NOT IN',
+                    ),
+                ),
+            );
+            $q = new WP_Query($args);
+            if ($q->have_posts()) {
+                $q->the_post();
+                $thumb = get_the_post_thumbnail_url(get_the_ID(), 'large');
+                wp_reset_postdata();
+                if ($thumb) {
+                    return $thumb;
+                }
+            }
+        }
+    }
+
+    $custom_logo_id = get_theme_mod('custom_logo');
+    if ($custom_logo_id) {
+        $url = wp_get_attachment_image_url((int) $custom_logo_id, 'full');
+        if ($url) {
+            return $url;
+        }
+    }
+    return '';
+}
+
+/**
+ * Outputs JSON-LD structured data in wp_head based on current context.
+ *
+ * @return void
+ */
+function cedricph_output_structured_data(): void {
+    $site_url = home_url('/');
+    $site_name = get_bloginfo('name', 'display');
+    $site_description = get_bloginfo('description', 'display');
+    $locale = get_bloginfo('language');
+    $logo_id = get_theme_mod('custom_logo');
+    $logo_url = $logo_id ? wp_get_attachment_image_url((int) $logo_id, 'full') : '';
+
+    $graphs = array();
+
+    // WebSite (sitewide)
+    $website = array(
+        '@type'       => 'WebSite',
+        '@id'         => $site_url . '#website',
+        'url'         => $site_url,
+        'name'        => $site_name,
+        'description' => $site_description ?: null,
+        'publisher'   => array(
+            '@id' => $site_url . '#organization',
+        ),
+        'inLanguage'  => $locale ?: null,
+    );
+    if (has_nav_menu('primary')) {
+        $website['potentialAction'] = array(
+            '@type'  => 'SearchAction',
+            'target' => array(
+                '@type'       => 'EntryPoint',
+                'urlTemplate' => $site_url . '?s={search_term_string}',
+            ),
+            'query-input' => 'required name=search_term_string',
+        );
+    }
+    $graphs[] = $website;
+
+    // Organization (sitewide)
+    $same_as = cedricph_get_social_same_as_urls();
+    $organization = array(
+        '@type' => 'Organization',
+        '@id'   => $site_url . '#organization',
+        'name'  => $site_name,
+        'url'   => $site_url,
+        'logo'  => $logo_url ? array(
+            '@type' => 'ImageObject',
+            'url'   => $logo_url,
+        ) : null,
+    );
+    if (!empty($same_as)) {
+        $organization['sameAs'] = $same_as;
+    }
+    $graphs[] = $organization;
+
+    // Context-specific schema
+    if (is_front_page()) {
+        $based_in = function_exists('get_field') ? get_field('about_based_in') : null;
+        $photographer = array(
+            '@type'          => 'ProfessionalService',
+            'additionalType' => 'https://schema.org/Photographer',
+            'name'           => $site_name,
+            'url'            => $site_url,
+            'description'    => $site_description ?: (function_exists('get_field') ? wp_strip_all_tags((string) get_field('hero_subtitle')) : null),
+            'logo'           => $logo_url ? array('@type' => 'ImageObject', 'url' => $logo_url) : null,
+        );
+        if (is_string($based_in) && $based_in !== '') {
+            $photographer['address'] = array(
+                '@type' => 'PostalAddress',
+                'addressLocality' => $based_in,
+            );
+        }
+        if (!empty($same_as)) {
+            $photographer['sameAs'] = $same_as;
+        }
+        $graphs[] = $photographer;
+    }
+
+    if (is_singular('project')) {
+        $post_id = get_queried_object_id();
+        if (function_exists('cedricph_is_private_project') && cedricph_is_private_project($post_id)) {
+            $token = isset($_GET['access_token']) ? sanitize_text_field(wp_unslash($_GET['access_token'])) : '';
+            $valid = function_exists('cedricph_validate_access_token') ? cedricph_validate_access_token($post_id, $token) : false;
+            if (!is_bool($valid) || !$valid) {
+                // Private without valid token: skip project schema
+            } else {
+                $graphs[] = cedricph_build_project_schema($post_id);
+            }
+        } else {
+            $graphs[] = cedricph_build_project_schema($post_id);
+        }
+    }
+
+    if (is_page()) {
+        $template = get_page_template_slug();
+        if ($template === 'page-analog.php') {
+            $graphs[] = array(
+                '@type'       => 'CollectionPage',
+                'name'       => __('Analog Photography', 'cedricph'),
+                'description' => __('Film photography projects captured on analog cameras.', 'cedricph'),
+                'url'        => get_permalink(),
+            );
+        } elseif ($template === 'page-digital.php') {
+            $graphs[] = array(
+                '@type'       => 'CollectionPage',
+                'name'       => __('Digital Photography', 'cedricph'),
+                'description' => __('Digital photography projects captured with modern equipment.', 'cedricph'),
+                'url'        => get_permalink(),
+            );
+        }
+    }
+
+    $json = array(
+        '@context' => 'https://schema.org',
+        '@graph'   => $graphs,
+    );
+    echo '<script type="application/ld+json">' . "\n" . wp_json_encode($json, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n" . '</script>' . "\n";
+}
+
+/**
+ * Builds ImageGallery/CreativeWork schema for a project.
+ *
+ * @param int $postId Project post ID.
+ * @return array<string, mixed>
+ */
+function cedricph_build_project_schema(int $postId): array {
+    $title = get_the_title($postId);
+    $url = get_permalink($postId);
+    $desc = function_exists('get_field') ? get_field('project_description', $postId) : null;
+    $description = is_string($desc) ? wp_strip_all_tags($desc) : '';
+    if (mb_strlen($description) > 160) {
+        $description = mb_substr($description, 0, 157) . '...';
+    }
+    $gallery = cedricph_get_project_gallery_images($postId);
+    $images = array();
+    foreach ($gallery as $img) {
+        $images[] = array('@type' => 'ImageObject', 'url' => $img['url']);
+    }
+    $location = function_exists('get_field') ? get_field('project_location', $postId) : null;
+    $schema = array(
+        '@type'         => count($images) > 1 ? 'ImageGallery' : 'CreativeWork',
+        'name'          => $title,
+        'url'           => $url,
+        'description'   => $description ?: null,
+        'image'         => !empty($images) ? $images : null,
+        'author'        => array(
+            '@type' => 'Organization',
+            'name'  => get_bloginfo('name', 'display'),
+            'url'   => home_url('/'),
+        ),
+        'datePublished' => get_the_date('c', $postId),
+    );
+    if (is_string($location) && $location !== '') {
+        $schema['locationCreated'] = array(
+            '@type' => 'Place',
+            'name'  => $location,
+        );
+    }
+    return $schema;
+}
+
+/**
+ * Outputs SEO meta tags (OG, Twitter, canonical, description, robots) in wp_head.
+ *
+ * @return void
+ */
+function cedricph_output_seo_meta_tags(): void {
+    if (is_front_page()) {
+        $url = home_url('/');
+    } else {
+        $url = get_permalink();
+    }
+    if (!$url || $url === '') {
+        $url = home_url(add_query_arg(array()));
+    }
+    $title = wp_get_document_title();
+    $description = cedricph_get_meta_description();
+    $og_image = cedricph_get_og_image_url();
+    $site_name = get_bloginfo('name', 'display');
+    $locale = get_bloginfo('language');
+
+    $robots = 'index, follow';
+    if (is_singular('project')) {
+        $post_id = get_queried_object_id();
+        if (function_exists('cedricph_is_private_project') && cedricph_is_private_project($post_id)) {
+            $token = isset($_GET['access_token']) ? sanitize_text_field(wp_unslash($_GET['access_token'])) : '';
+            $valid = function_exists('cedricph_validate_access_token') ? cedricph_validate_access_token($post_id, $token) : false;
+            if (!is_bool($valid) || !$valid) {
+                $robots = 'noindex, nofollow';
+            }
+        }
+    }
+    echo '<link rel="canonical" href="' . esc_url($url) . '">' . "\n";
+    echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
+    echo '<meta name="robots" content="' . esc_attr($robots) . '">' . "\n";
+
+    echo '<meta property="og:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr($description) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url($url) . '">' . "\n";
+    echo '<meta property="og:type" content="' . esc_attr(is_front_page() ? 'website' : 'article') . '">' . "\n";
+    echo '<meta property="og:site_name" content="' . esc_attr($site_name) . '">' . "\n";
+    echo '<meta property="og:locale" content="' . esc_attr($locale) . '">' . "\n";
+    if ($og_image !== '') {
+        echo '<meta property="og:image" content="' . esc_url($og_image) . '">' . "\n";
+    }
+
+    echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta name="twitter:description" content="' . esc_attr($description) . '">' . "\n";
+    if ($og_image !== '') {
+        echo '<meta name="twitter:image" content="' . esc_url($og_image) . '">' . "\n";
+    }
+}
+
+/**
+ * Document title separator: em dash.
+ *
+ * @param string $separator Current separator.
+ * @return string
+ */
+function cedricph_filter_document_title_separator(string $separator): string {
+    return ' — ';
+}
+
+/**
+ * Homepage title format: "Cedric Ph — Photographer" (or site name + tagline).
+ *
+ * @param array<string, string> $parts Title parts.
+ * @return array<string, string>
+ */
+function cedricph_filter_document_title_parts(array $parts): array {
+    if (!empty($parts['tagline']) && (is_front_page() && is_home())) {
+        $parts['title'] = get_bloginfo('name', 'display');
+        $parts['tagline'] = get_bloginfo('description', 'display') ?: __('Photographer', 'cedricph');
+    }
+    return $parts;
+}
+
+/**
+ * Removes generator and unnecessary head links.
+ *
+ * @return void
+ */
+function cedricph_remove_head_clutter(): void {
+    remove_action('wp_head', 'wp_generator');
+    remove_action('wp_head', 'wlwmanifest_link');
+    remove_action('wp_head', 'rsd_link');
+    remove_action('wp_head', 'wp_shortlink_wp_head');
+}
+add_action('init', 'cedricph_remove_head_clutter');
+add_filter('document_title_separator', 'cedricph_filter_document_title_separator');
+add_filter('document_title_parts', 'cedricph_filter_document_title_parts', 10, 1);
+add_action('wp_head', 'cedricph_output_structured_data', 5);
+add_action('wp_head', 'cedricph_output_seo_meta_tags', 6);
+
+// ===================================
+// PERFORMANCE & CORE WEB VITALS
+// ===================================
+
+/**
+ * Preloads hero image on front page (with srcset/sizes when available).
+ *
+ * @return void
+ */
+function cedricph_output_frontpage_hero_preload(): void {
+    if (!is_front_page()) {
+        return;
+    }
+    $hero = function_exists('get_field') ? get_field('hero_background_image') : null;
+    $url = '';
+    $id = 0;
+    if (is_array($hero) && !empty($hero['ID'])) {
+        $id = (int) $hero['ID'];
+        $url = !empty($hero['url']) ? $hero['url'] : wp_get_attachment_image_url($id, 'full');
+    } elseif (is_numeric($hero)) {
+        $id = (int) $hero;
+        $url = wp_get_attachment_image_url($id, 'full');
+    } elseif (is_array($hero) && !empty($hero['url'])) {
+        $url = $hero['url'];
+    } elseif (is_string($hero)) {
+        $url = $hero;
+    }
+    if ($url === '') {
+        return;
+    }
+    $atts = array(
+        'rel'  => 'preload',
+        'as'   => 'image',
+        'href' => $url,
+    );
+    if ($id && function_exists('wp_get_attachment_image_srcset')) {
+        $srcset = wp_get_attachment_image_srcset($id, 'full');
+        $sizes = wp_get_attachment_image_sizes($id, 'full');
+        if ($srcset) {
+            $atts['imagesrcset'] = $srcset;
+        }
+        if ($sizes) {
+            $atts['imagesizes'] = $sizes;
+        }
+    }
+    $line = '<link ';
+    foreach ($atts as $k => $v) {
+        $line .= esc_attr($k) . '="' . esc_attr($v) . '" ';
+    }
+    echo trim($line) . ">\n";
+}
+add_action('wp_head', 'cedricph_output_frontpage_hero_preload', 3);
+
+/**
+ * Adds dns-prefetch and preconnect for external origins.
+ *
+ * @param array<int, array<string, string>> $urls URLs and attributes.
+ * @param string                            $relationType Relation type.
+ * @return array<int, array<string, string>>
+ */
+function cedricph_add_resource_hints(array $urls, string $relationType): array {
+    if ($relationType === 'dns-prefetch') {
+        $urls[] = array('href' => 'https://www.instagram.com');
+        $urls[] = array('href' => 'https://www.linkedin.com');
+        $urls[] = array('href' => 'https://fonts.googleapis.com');
+        $urls[] = array('href' => 'https://fonts.gstatic.com');
+    }
+    if ($relationType === 'preconnect') {
+        $urls[] = array(
+            'href'        => 'https://fonts.googleapis.com',
+            'crossorigin' => 'anonymous',
+        );
+        $urls[] = array(
+            'href'        => 'https://fonts.gstatic.com',
+            'crossorigin' => 'anonymous',
+        );
+    }
+    return $urls;
+}
+add_filter('wp_resource_hints', 'cedricph_add_resource_hints', 10, 2);
+
+/**
+ * Adds loading="lazy", decoding="async" to attachment images; skip for above-the-fold context.
+ *
+ * @param array<string, string> $attr Image attributes.
+ * @param WP_Post               $attachment Attachment post.
+ * @param string|array<int,int>  $size Size.
+ * @return array<string, string>
+ */
+function cedricph_optimize_attachment_image_attributes(array $attr, WP_Post $attachment, $size): array {
+    $attr['decoding'] = 'async';
+    if (empty($attr['loading'])) {
+        $attr['loading'] = 'lazy';
+    }
+    return $attr;
+}
+add_filter('wp_get_attachment_image_attributes', 'cedricph_optimize_attachment_image_attributes', 10, 3);
+
+// ===================================
+// SITEMAP & ROBOTS
+// ===================================
+
+/**
+ * Excludes private projects from the WordPress sitemap.
+ *
+ * @param array<string, mixed> $args Query args for post type sitemap.
+ * @param string               $postType Post type name.
+ * @return array<string, mixed>
+ */
+function cedricph_exclude_private_projects_from_sitemaps(array $args, string $postType): array {
+    if ($postType !== 'project') {
+        return $args;
+    }
+    if (!isset($args['tax_query']) || !is_array($args['tax_query'])) {
+        $args['tax_query'] = array();
+    }
+    $args['tax_query'][] = array(
+        'taxonomy' => 'project_type',
+        'field'    => 'slug',
+        'terms'    => 'private',
+        'operator' => 'NOT IN',
+    );
+    return $args;
+}
+add_filter('wp_sitemaps_posts_query_args', 'cedricph_exclude_private_projects_from_sitemaps', 10, 2);
+
+/**
+ * Ensures project post type is included in sitemaps (public CPTs are included by default).
+ *
+ * @param array<string, WP_Post_Type> $postTypes Post type objects for sitemap.
+ * @return array<string, WP_Post_Type>
+ */
+function cedricph_ensure_project_in_sitemaps(array $postTypes): array {
+    if (!isset($postTypes['project'])) {
+        $obj = get_post_type_object('project');
+        if ($obj) {
+            $postTypes['project'] = $obj;
+        }
+    }
+    return $postTypes;
+}
+add_filter('wp_sitemaps_post_types', 'cedricph_ensure_project_in_sitemaps');
+
+// ===================================
+// SECURITY HEADERS
+// ===================================
+
+/**
+ * Sends security-related HTTP headers.
+ *
+ * @return void
+ */
+function cedricph_send_security_headers(): void {
+    if (headers_sent()) {
+        return;
+    }
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
+add_action('send_headers', 'cedricph_send_security_headers');
+
+// ===================================
+// CONTACT FORM & EXTERNAL LINKS (REL)
+// ===================================
+
+/**
+ * Adds aria-label to Contact Form 7 wrapper when present.
+ *
+ * @param string $output Shortcode output.
+ * @param string $tag   Shortcode tag.
+ * @return string
+ */
+function cedricph_wpcf7_form_aria_label(string $output, string $tag): string {
+    if ($tag !== 'contact-form-7') {
+        return $output;
+    }
+    if (strpos($output, 'aria-label=') !== false) {
+        return $output;
+    }
+    return preg_replace('/<div\s+class="([^"]*wpcf7[^"]*)"/', '<div class="$1" aria-label="' . esc_attr__('Contact form', 'cedricph') . '"', $output, 1);
+}
+add_filter('do_shortcode_tag', 'cedricph_wpcf7_form_aria_label', 10, 2);
+
+/**
+ * Ensures external links in content have rel="noopener noreferrer".
+ *
+ * @param string $content Post content.
+ * @return string
+ */
+function cedricph_rel_noopener_noreferrer_for_external(string $content): string {
+    if (strpos($content, '<a ') === false) {
+        return $content;
+    }
+    $home = home_url();
+    return preg_replace_callback(
+        '/<a\s+([^>]*href=["\']([^"\']+)["\'][^>]*)>/i',
+        static function (array $m) use ($home): string {
+            $full = $m[0];
+            $url = $m[2];
+            if (strpos($url, '#') === 0 || strpos($url, 'mailto:') === 0 || strpos($url, 'tel:') === 0) {
+                return $full;
+            }
+            $is_external = (strpos($url, 'http') === 0 && strpos($url, $home) !== 0);
+            if (!$is_external) {
+                return $full;
+            }
+            if (preg_match('/\srel=["\']([^"\']*)["\']/i', $full, $relMatch)) {
+                $rel = $relMatch[1];
+                if (stripos($rel, 'noopener') !== false) {
+                    return $full;
+                }
+                $newRel = trim($rel . ' noopener noreferrer');
+                return preg_replace('/\srel=["\'][^"\']*["\']/i', ' rel="' . esc_attr($newRel) . '"', $full);
+            }
+            return str_replace('<a ', '<a rel="noopener noreferrer" ', $full);
+        },
+        $content
+    );
+}
+add_filter('the_content', 'cedricph_rel_noopener_noreferrer_for_external', 20);
+
+/**
+ * Renders breadcrumb nav with BreadcrumbList schema.
+ *
+ * @param array<int, array{label: string, url: string}> $items Breadcrumb items (label, url).
+ * @return void
+ */
+function cedricph_render_breadcrumb(array $items): void {
+    if (empty($items)) {
+        return;
+    }
+    $list = array(
+        '@context'        => 'https://schema.org',
+        '@type'           => 'BreadcrumbList',
+        'itemListElement' => array(),
+    );
+    foreach ($items as $position => $item) {
+        $list['itemListElement'][] = array(
+            '@type'    => 'ListItem',
+            'position' => $position + 1,
+            'name'     => $item['label'],
+            'item'     => $item['url'],
+        );
+    }
+    ?>
+    <nav class="breadcrumb-nav" aria-label="<?php esc_attr_e('Breadcrumb', 'cedricph'); ?>">
+        <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+            <?php foreach ($items as $position => $item): ?>
+                <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                    <?php if ($position < count($items) - 1): ?>
+                        <a href="<?php echo esc_url($item['url']); ?>" itemprop="item"><span itemprop="name"><?php echo esc_html($item['label']); ?></span></a>
+                        <meta itemprop="position" content="<?php echo esc_attr((string) ($position + 1)); ?>">
+                    <?php else: ?>
+                        <span itemprop="name"><?php echo esc_html($item['label']); ?></span>
+                        <meta itemprop="position" content="<?php echo esc_attr((string) ($position + 1)); ?>">
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ol>
+        <script type="application/ld+json"><?php echo wp_json_encode($list); ?></script>
+    </nav>
+    <?php
+}
+
+/**
+ * Returns adjacent project (prev/next) in same project_type.
+ *
+ * @param int  $postId Current project ID.
+ * @param bool $next   True for next, false for previous.
+ * @return WP_Post|null
+ */
+function cedricph_get_adjacent_project(int $postId, bool $next): ?WP_Post {
+    $terms = get_the_terms($postId, 'project_type');
+    if (!$terms || is_wp_error($terms)) {
+        return null;
+    }
+    $term_ids = array();
+    foreach ($terms as $t) {
+        if ($t->slug !== 'private') {
+            $term_ids[] = $t->term_id;
+        }
+    }
+    if (empty($term_ids)) {
+        return null;
+    }
+    $order = $next ? 'ASC' : 'DESC';
+    $compare = $next ? '>' : '<';
+    $current_post = get_post($postId);
+    if (!$current_post) {
+        return null;
+    }
+    $query = new WP_Query(array(
+        'post_type'      => 'project',
+        'post__not_in'   => array($postId),
+        'posts_per_page' => 1,
+        'orderby'        => 'date',
+        'order'          => $order,
+        'date_query'     => array(
+            array(
+                $compare => $current_post->post_date,
+            ),
+        ),
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'project_type',
+                'field'   => 'term_id',
+                'terms'   => $term_ids,
+            ),
+            array(
+                'taxonomy' => 'project_type',
+                'field'   => 'slug',
+                'terms'   => 'private',
+                'operator' => 'NOT IN',
+            ),
+        ),
+    ));
+    if (!$query->have_posts()) {
+        return null;
+    }
+    $query->the_post();
+    $post = get_post();
+    wp_reset_postdata();
+    return $post;
+}

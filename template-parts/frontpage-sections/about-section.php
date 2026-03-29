@@ -101,7 +101,7 @@ $cta_link = get_field('about_cta_link');
                         <a
                             href="<?php echo esc_url($cta_link['url']); ?>"
                             class="about-cta-btn"
-                            <?php if (!empty($cta_link['target'])): ?>target="<?php echo esc_attr($cta_link['target']); ?>"<?php endif; ?>
+                            <?php if (!empty($cta_link['target'])): ?>target="<?php echo esc_attr($cta_link['target']); ?>" rel="noopener noreferrer"<?php endif; ?>
                         >
                             <?php echo esc_html($cta_text); ?>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
