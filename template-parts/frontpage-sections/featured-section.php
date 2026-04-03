@@ -2,15 +2,13 @@
 /**
  * Featured Section Template
  *
- * Displays 3 featured projects and optional Instagram embed.
- * ACF fields: featured_project_1, featured_project_2, featured_project_3, instagram_embed.
+ * Displays up to 15 gallery images in a mosaic grid with lightbox.
+ * Gallery uses custom meta box (no ACF Pro required).
+ * Instagram embed uses ACF free wysiwyg field.
  */
 
-$project_1 = get_field('featured_project_1');
-$project_2 = get_field('featured_project_2');
-$project_3 = get_field('featured_project_3');
+$gallery = cedricph_get_featured_gallery();
 $instagram_embed = get_field('instagram_embed');
-$featured_projects = array_filter(array($project_1, $project_2, $project_3));
 ?>
 
 <section id="featured" class="featured-section">
@@ -19,47 +17,70 @@ $featured_projects = array_filter(array($project_1, $project_2, $project_3));
             <h2 class="section-title"><?php echo esc_html__('Featured Work', 'cedricph'); ?></h2>
         </div>
 
-        <?php if (!empty($featured_projects)): ?>
-            <div class="projects-grid">
-                <?php foreach ($featured_projects as $project):
-                    $project_id = $project->ID;
-                    $project_title = get_the_title($project_id);
-                    $project_permalink = get_permalink($project_id);
-                    $project_type = get_the_terms($project_id, 'project_type');
-                    $project_type_name = ($project_type && !is_wp_error($project_type)) ? $project_type[0]->name : '';
-                    $thumbnail_id = get_post_thumbnail_id($project_id);
+        <?php if (!empty($gallery)): ?>
+            <div class="featured-grid">
+                <?php foreach ($gallery as $index => $image):
+                    $medium_url = $image['medium'];
+                    $full_url = $image['url'];
+                    $alt = $image['alt'] ?: sprintf(__('Featured image %d', 'cedricph'), $index + 1);
                     ?>
-                    <article class="project-card">
-                        <a href="<?php echo esc_url($project_permalink); ?>" class="project-card-link">
-                            <?php
-                            if ($thumbnail_id) {
-                                echo wp_get_attachment_image($thumbnail_id, 'large', false, array('class' => 'project-image', 'loading' => 'lazy', 'decoding' => 'async'));
-                            } else {
-                                $fallback_url = '';
-                                $content = get_post_field('post_content', $project_id);
-                                if (preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]*/i', $content, $m)) {
-                                    $fallback_url = $m[1];
-                                }
-                                if ($fallback_url): ?>
-                                <img
-                                    src="<?php echo esc_url($fallback_url); ?>"
-                                    alt="<?php echo esc_attr($project_title); ?>"
-                                    class="project-image"
-                                    loading="lazy"
-                                    decoding="async"
-                                >
-                                <?php endif;
-                            }
-                            ?>
-                            <div class="project-overlay">
-                                <h3 class="project-title"><?php echo esc_html($project_title); ?></h3>
-                                <?php if ($project_type_name): ?>
-                                    <span class="project-category"><?php echo esc_html($project_type_name); ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </a>
-                    </article>
+                    <figure class="featured-grid__item">
+                        <button
+                            type="button"
+                            class="featured-grid__trigger"
+                            data-full-src="<?php echo esc_url($full_url); ?>"
+                            data-index="<?php echo esc_attr((string) $index); ?>"
+                            aria-label="<?php echo esc_attr(sprintf(__('View %s full size', 'cedricph'), $alt)); ?>"
+                        >
+                            <img
+                                src="<?php echo esc_url($medium_url); ?>"
+                                alt="<?php echo esc_attr($alt); ?>"
+                                class="featured-grid__img"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        </button>
+                    </figure>
                 <?php endforeach; ?>
+            </div>
+
+            <!-- Lightbox -->
+            <div
+                class="featured-lightbox"
+                id="featuredLightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label="<?php esc_attr_e('Image viewer', 'cedricph'); ?>"
+                hidden
+            >
+                <div class="featured-lightbox__backdrop"></div>
+
+                <button class="featured-lightbox__close" aria-label="<?php esc_attr_e('Close', 'cedricph'); ?>">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+
+                <button class="featured-lightbox__prev" aria-label="<?php esc_attr_e('Previous image', 'cedricph'); ?>">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18L9 12L15 6"/>
+                    </svg>
+                </button>
+
+                <button class="featured-lightbox__next" aria-label="<?php esc_attr_e('Next image', 'cedricph'); ?>">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18L15 12L9 6"/>
+                    </svg>
+                </button>
+
+                <img class="featured-lightbox__img" src="" alt="">
+
+                <span class="featured-lightbox__counter">
+                    <span class="featured-lightbox__current">1</span>
+                    /
+                    <span class="featured-lightbox__total"><?php echo esc_html((string) count($gallery)); ?></span>
+                </span>
             </div>
         <?php endif; ?>
 

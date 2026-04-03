@@ -38,6 +38,24 @@ function cedricph_setup(): void {
 add_action('after_setup_theme', 'cedricph_setup');
 
 /**
+ * Disables the block editor for the front page so ACF fields and the Featured Gallery meta box render correctly.
+ *
+ * @param bool $use_block_editor Whether to use the block editor.
+ * @param WP_Post $post The post being edited.
+ * @return bool
+ */
+function cedricph_disable_gutenberg_for_front_page(bool $use_block_editor, WP_Post $post): bool {
+    $front_page_id = (int) get_option('page_on_front');
+
+    if ($front_page_id && $post->ID === $front_page_id) {
+        return false;
+    }
+
+    return $use_block_editor;
+}
+add_filter('use_block_editor_for_post', 'cedricph_disable_gutenberg_for_front_page', 10, 2);
+
+/**
  * Allows SVG uploads in the Media Library and Customizer (for custom logo).
  *
  * @param array<string, string> $mimes Allowed MIME types.
@@ -942,44 +960,11 @@ if (function_exists('acf_add_local_field_group')) {
         'description' => 'About section fields for the front page',
     ));
 
-    // Featured Section Fields for Front Page
+    // Featured Section — Instagram embed (gallery is handled by cedricph_register_featured_gallery_metabox)
     acf_add_local_field_group(array(
         'key' => 'group_featured_section',
-        'title' => 'Featured Section',
+        'title' => 'Featured Section — Instagram',
         'fields' => array(
-            array(
-                'key' => 'field_featured_project_1',
-                'label' => 'Featured Project 1',
-                'name' => 'featured_project_1',
-                'type' => 'post_object',
-                'instructions' => 'Select the first featured project',
-                'required' => 0,
-                'post_type' => array('project'),
-                'return_format' => 'object',
-                'allow_null' => 1,
-            ),
-            array(
-                'key' => 'field_featured_project_2',
-                'label' => 'Featured Project 2',
-                'name' => 'featured_project_2',
-                'type' => 'post_object',
-                'instructions' => 'Select the second featured project',
-                'required' => 0,
-                'post_type' => array('project'),
-                'return_format' => 'object',
-                'allow_null' => 1,
-            ),
-            array(
-                'key' => 'field_featured_project_3',
-                'label' => 'Featured Project 3',
-                'name' => 'featured_project_3',
-                'type' => 'post_object',
-                'instructions' => 'Select the third featured project',
-                'required' => 0,
-                'post_type' => array('project'),
-                'return_format' => 'object',
-                'allow_null' => 1,
-            ),
             array(
                 'key' => 'field_instagram_embed',
                 'label' => 'Instagram Embed Code',
@@ -1009,7 +994,7 @@ if (function_exists('acf_add_local_field_group')) {
         'instruction_placement' => 'label',
         'hide_on_screen' => '',
         'active' => true,
-        'description' => 'Featured section fields for the front page',
+        'description' => 'Instagram embed for the featured section',
     ));
 
     // Contact Section Fields for Front Page
@@ -2520,3 +2505,265 @@ function cedricph_get_adjacent_project(int $postId, bool $next): ?WP_Post {
     wp_reset_postdata();
     return $post;
 }
+
+/* ==========================================================================
+   Featured Gallery Meta Box (native WP — no ACF Pro required)
+   ========================================================================== */
+
+/**
+ * Registers the Featured Gallery meta box on the front page editor.
+ *
+ * @return void
+ */
+function cedricph_register_featured_gallery_metabox(): void {
+    $front_page_id = (int) get_option('page_on_front');
+
+    if (!$front_page_id) {
+        return;
+    }
+
+    $screen = get_current_screen();
+    if (!$screen || $screen->id !== 'page') {
+        return;
+    }
+
+    global $post;
+    if (!$post || (int) $post->ID !== $front_page_id) {
+        return;
+    }
+
+    add_meta_box(
+        'cedricph_featured_gallery',
+        __('Featured Gallery', 'cedricph'),
+        'cedricph_featured_gallery_render',
+        'page',
+        'normal',
+        'high'
+    );
+}
+add_action('add_meta_boxes', 'cedricph_register_featured_gallery_metabox');
+
+/**
+ * Renders the Featured Gallery meta box HTML.
+ *
+ * @param WP_Post $post The current post.
+ * @return void
+ */
+function cedricph_featured_gallery_render(WP_Post $post): void {
+    wp_nonce_field('cedricph_featured_gallery', 'cedricph_featured_gallery_nonce');
+
+    $image_ids = get_post_meta($post->ID, '_cedricph_featured_gallery', true);
+    $image_ids = is_array($image_ids) ? $image_ids : array();
+    ?>
+    <p class="description"><?php esc_html_e('Upload up to 15 images. Drag to reorder.', 'cedricph'); ?></p>
+
+    <div id="cedricph-gallery-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;min-height:60px;">
+        <?php foreach ($image_ids as $attachment_id):
+            $thumb = wp_get_attachment_image_url((int) $attachment_id, 'thumbnail');
+            if (!$thumb) {
+                continue;
+            }
+            ?>
+            <div class="cedricph-gallery-thumb" data-id="<?php echo esc_attr((string) $attachment_id); ?>" style="position:relative;width:100px;height:100px;border-radius:4px;overflow:hidden;cursor:grab;border:2px solid #ddd;">
+                <img src="<?php echo esc_url($thumb); ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
+                <button type="button" class="cedricph-gallery-remove" style="position:absolute;top:2px;right:2px;background:#d63638;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="<?php esc_attr_e('Remove image', 'cedricph'); ?>">&times;</button>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <input type="hidden" id="cedricph-gallery-ids" name="cedricph_featured_gallery" value="<?php echo esc_attr(implode(',', $image_ids)); ?>">
+
+    <button type="button" id="cedricph-gallery-add" class="button button-primary">
+        <?php esc_html_e('Add Images', 'cedricph'); ?>
+    </button>
+    <span id="cedricph-gallery-count" style="margin-left:12px;color:#666;">
+        <?php printf(esc_html__('%d / 15 images', 'cedricph'), count($image_ids)); ?>
+    </span>
+
+    <script>
+    (function($) {
+        var MAX_IMAGES = 15;
+        var $preview = $('#cedricph-gallery-preview');
+        var $input   = $('#cedricph-gallery-ids');
+        var $addBtn  = $('#cedricph-gallery-add');
+        var $count   = $('#cedricph-gallery-count');
+
+        function getIds() {
+            var val = $input.val().trim();
+            return val ? val.split(',').map(Number) : [];
+        }
+
+        function setIds(ids) {
+            $input.val(ids.join(','));
+            $count.text(ids.length + ' / ' + MAX_IMAGES + ' images');
+        }
+
+        /* Drag-to-reorder via jQuery UI Sortable (bundled with WP) */
+        $preview.sortable({
+            tolerance: 'pointer',
+            cursor: 'grabbing',
+            update: function() {
+                var ids = [];
+                $preview.children('.cedricph-gallery-thumb').each(function() {
+                    ids.push($(this).data('id'));
+                });
+                setIds(ids);
+            }
+        });
+
+        /* Remove image */
+        $preview.on('click', '.cedricph-gallery-remove', function(e) {
+            e.preventDefault();
+            var $thumb = $(this).closest('.cedricph-gallery-thumb');
+            var removeId = $thumb.data('id');
+            $thumb.remove();
+            var ids = getIds().filter(function(id) { return id !== removeId; });
+            setIds(ids);
+        });
+
+        /* Add images via WP Media modal */
+        $addBtn.on('click', function(e) {
+            e.preventDefault();
+            var currentIds = getIds();
+            var remaining  = MAX_IMAGES - currentIds.length;
+
+            if (remaining <= 0) {
+                alert('<?php echo esc_js(__('Maximum 15 images reached. Remove some to add new ones.', 'cedricph')); ?>');
+                return;
+            }
+
+            var frame = wp.media({
+                title: '<?php echo esc_js(__('Select Featured Gallery Images', 'cedricph')); ?>',
+                button: { text: '<?php echo esc_js(__('Add to Gallery', 'cedricph')); ?>' },
+                library: { type: 'image' },
+                multiple: true
+            });
+
+            frame.on('select', function() {
+                var selection = frame.state().get('selection').toArray();
+                var ids = getIds();
+
+                selection.forEach(function(attachment) {
+                    if (ids.length >= MAX_IMAGES) {
+                        return;
+                    }
+                    var data = attachment.toJSON();
+                    if (ids.indexOf(data.id) !== -1) {
+                        return;
+                    }
+                    ids.push(data.id);
+                    var thumb = data.sizes && data.sizes.thumbnail ? data.sizes.thumbnail.url : data.url;
+                    $preview.append(
+                        '<div class="cedricph-gallery-thumb" data-id="' + data.id + '" style="position:relative;width:100px;height:100px;border-radius:4px;overflow:hidden;cursor:grab;border:2px solid #ddd;">' +
+                            '<img src="' + thumb + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                            '<button type="button" class="cedricph-gallery-remove" style="position:absolute;top:2px;right:2px;background:#d63638;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="Remove image">&times;</button>' +
+                        '</div>'
+                    );
+                });
+
+                setIds(ids);
+            });
+
+            frame.open();
+        });
+    })(jQuery);
+    </script>
+    <?php
+}
+
+/**
+ * Saves the Featured Gallery meta box data.
+ *
+ * @param int $post_id The post ID being saved.
+ * @return void
+ */
+function cedricph_featured_gallery_save(int $post_id): void {
+    if (!isset($_POST['cedricph_featured_gallery_nonce'])) {
+        return;
+    }
+
+    if (!wp_verify_nonce($_POST['cedricph_featured_gallery_nonce'], 'cedricph_featured_gallery')) {
+        return;
+    }
+
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if (!current_user_can('edit_page', $post_id)) {
+        return;
+    }
+
+    $raw = isset($_POST['cedricph_featured_gallery']) ? sanitize_text_field($_POST['cedricph_featured_gallery']) : '';
+    $ids = array_filter(array_map('intval', explode(',', $raw)));
+
+    /* Enforce max 15 */
+    $ids = array_slice($ids, 0, 15);
+
+    update_post_meta($post_id, '_cedricph_featured_gallery', $ids);
+}
+add_action('save_post_page', 'cedricph_featured_gallery_save');
+
+/**
+ * Retrieves the featured gallery images for the front page.
+ *
+ * @return array<int, array{id: int, url: string, medium: string, alt: string}> Array of image data.
+ */
+function cedricph_get_featured_gallery(): array {
+    $front_page_id = (int) get_option('page_on_front');
+
+    if (!$front_page_id) {
+        return array();
+    }
+
+    $ids = get_post_meta($front_page_id, '_cedricph_featured_gallery', true);
+
+    if (!is_array($ids) || empty($ids)) {
+        return array();
+    }
+
+    $images = array();
+    foreach ($ids as $attachment_id) {
+        $attachment_id = (int) $attachment_id;
+        $full_url = wp_get_attachment_image_url($attachment_id, 'full');
+
+        if (!$full_url) {
+            continue;
+        }
+
+        $medium_url = wp_get_attachment_image_url($attachment_id, 'medium_large') ?: $full_url;
+        $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true) ?: '';
+
+        $images[] = array(
+            'id' => $attachment_id,
+            'url' => $full_url,
+            'medium' => $medium_url,
+            'alt' => $alt,
+        );
+    }
+
+    return $images;
+}
+
+/**
+ * Enqueues WP media uploader scripts on the front page editor.
+ *
+ * @param string $hook The current admin page hook.
+ * @return void
+ */
+function cedricph_enqueue_gallery_admin_scripts(string $hook): void {
+    if ($hook !== 'post.php' && $hook !== 'post-new.php') {
+        return;
+    }
+
+    global $post;
+    $front_page_id = (int) get_option('page_on_front');
+
+    if (!$post || (int) $post->ID !== $front_page_id) {
+        return;
+    }
+
+    wp_enqueue_media();
+    wp_enqueue_script('jquery-ui-sortable');
+}
+add_action('admin_enqueue_scripts', 'cedricph_enqueue_gallery_admin_scripts');

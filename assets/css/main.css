@@ -1716,7 +1716,208 @@ section[id],
     background: linear-gradient(90deg, transparent 0%, var(--color-accent-1) 50%, transparent 100%);
 }
 
-/* Projects grid — single column on mobile */
+/* --- Featured Gallery Grid --- */
+.featured-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 200px;
+    grid-auto-flow: dense;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Span patterns — mobile: every 5th item spans 2 columns */
+.featured-grid__item:nth-child(5n + 1) {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.featured-grid__item {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+}
+
+.featured-grid__trigger {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: var(--color-overlay-black-30);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.featured-grid__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.6s var(--easing-smooth);
+}
+
+.featured-grid__item:hover .featured-grid__img {
+    transform: scale(1.06);
+}
+
+/* Gold L-shaped corner accent on hover */
+.featured-grid__item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    border-top: 2px solid var(--color-accent-1);
+    border-right: 2px solid var(--color-accent-1);
+    z-index: var(--z-above-content);
+    opacity: 0;
+    transition:
+        opacity var(--transition-medium),
+        width var(--transition-medium),
+        height var(--transition-medium);
+    pointer-events: none;
+}
+
+.featured-grid__item:hover::after {
+    opacity: 0.7;
+    width: 32px;
+    height: 32px;
+}
+
+/* --- Featured Lightbox --- */
+.featured-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.featured-lightbox:not([hidden]) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.featured-lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-overlay-black-95);
+}
+
+.featured-lightbox__img {
+    position: relative;
+    z-index: 1;
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.featured-lightbox:not([hidden]) .featured-lightbox__img {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.featured-lightbox__close {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: var(--color-bg-primary-80);
+    border: 1px solid var(--color-border-white-muted);
+    border-radius: 50%;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.featured-lightbox__close:hover,
+.featured-lightbox__close:focus {
+    background-color: var(--color-accent-1);
+    border-color: var(--color-accent-1);
+    color: var(--color-bg-primary);
+    transform: scale(1.1);
+}
+
+.featured-lightbox__prev,
+.featured-lightbox__next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background-color: var(--color-bg-primary-80);
+    border: 1px solid var(--color-border-white-muted);
+    border-radius: 50%;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.featured-lightbox__prev {
+    left: var(--spacing-sm);
+}
+
+.featured-lightbox__next {
+    right: var(--spacing-sm);
+}
+
+.featured-lightbox__prev:hover,
+.featured-lightbox__prev:focus,
+.featured-lightbox__next:hover,
+.featured-lightbox__next:focus {
+    background-color: var(--color-accent-1);
+    border-color: var(--color-accent-1);
+    color: var(--color-bg-primary);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.featured-lightbox__counter {
+    position: absolute;
+    bottom: var(--spacing-md);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-primary-80);
+    border-radius: var(--radius-xs);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.featured-lightbox__current {
+    color: var(--color-accent-1);
+    font-weight: 600;
+}
+
+/* --- Shared project card styles (portfolio archive) --- */
 .projects-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -1724,7 +1925,6 @@ section[id],
     margin-bottom: var(--spacing-xl);
 }
 
-/* Shared project card styles (used by featured + archive) */
 .project-card {
     position: relative;
     aspect-ratio: 3 / 4;
@@ -1881,6 +2081,45 @@ section[id],
         font-size: clamp(1.75rem, 3.5vw, 2.25rem);
     }
 
+    /* Featured grid — 3 columns on tablet */
+    .featured-grid {
+        grid-template-columns: repeat(3, 1fr);
+        grid-auto-rows: 220px;
+        gap: var(--spacing-sm);
+    }
+
+    /* Reset mobile span, then set tablet pattern */
+    .featured-grid__item:nth-child(5n + 1) {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    /* Every 6th item (1st, 7th, 13th) spans 2 cols */
+    .featured-grid__item:nth-child(6n + 1) {
+        grid-column: span 2;
+    }
+
+    /* Every 4th item spans 2 rows for vertical emphasis */
+    .featured-grid__item:nth-child(6n + 4) {
+        grid-row: span 2;
+    }
+
+    /* Lightbox nav larger on tablet */
+    .featured-lightbox__prev,
+    .featured-lightbox__next {
+        width: 52px;
+        height: 52px;
+    }
+
+    .featured-lightbox__prev {
+        left: var(--spacing-md);
+    }
+
+    .featured-lightbox__next {
+        right: var(--spacing-md);
+    }
+
+    /* Portfolio project cards — tablet */
     .projects-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-md);
@@ -1889,13 +2128,6 @@ section[id],
 
     .project-card {
         aspect-ratio: 4 / 5;
-    }
-
-    /* Third card spans full width on tablet, centred */
-    .projects-grid .project-card:nth-child(3) {
-        grid-column: 1 / -1;
-        max-width: 50%;
-        margin: 0 auto;
     }
 
     /* Overlay hides on hover-capable devices */
@@ -1966,16 +2198,48 @@ section[id],
         padding: var(--spacing-xl) var(--spacing-xl);
     }
 
+    /* Featured grid — 4 columns on desktop, asymmetric mosaic */
+    .featured-grid {
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: 240px;
+        gap: var(--spacing-sm);
+    }
+
+    /* Reset tablet spans */
+    .featured-grid__item:nth-child(6n + 1) {
+        grid-column: auto;
+    }
+
+    .featured-grid__item:nth-child(6n + 4) {
+        grid-row: auto;
+    }
+
+    /* Desktop pattern: asymmetric mosaic */
+    /* 1st image: large hero — 2 cols, 2 rows */
+    .featured-grid__item:nth-child(1) {
+        grid-column: span 2;
+        grid-row: span 2;
+    }
+
+    /* 5th image: wide landscape — 2 cols */
+    .featured-grid__item:nth-child(5) {
+        grid-column: span 2;
+    }
+
+    /* 8th image: tall portrait — 2 rows */
+    .featured-grid__item:nth-child(8) {
+        grid-row: span 2;
+    }
+
+    /* 12th image: wide landscape — 2 cols */
+    .featured-grid__item:nth-child(12) {
+        grid-column: span 2;
+    }
+
+    /* Portfolio project cards — desktop */
     .projects-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: var(--spacing-lg);
-    }
-
-    /* Reset third card override */
-    .projects-grid .project-card:nth-child(3) {
-        grid-column: auto;
-        max-width: none;
-        margin: 0;
     }
 
     .project-title {

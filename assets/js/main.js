@@ -27,6 +27,7 @@
         aboutImageHover: { init: () => {} },
         projectCarousel: { init: () => {} },
         portfolioFilter: { init: () => {} },
+        featuredLightbox: { init: () => {} },
     };
 
     /**
@@ -849,6 +850,124 @@
         applyFilters();
     };
 
+    /**
+     * Featured gallery lightbox with keyboard and swipe support.
+     */
+    ThemeInit.featuredLightbox.init = function () {
+        const lightbox = document.getElementById('featuredLightbox');
+        if (!lightbox) {
+            return;
+        }
+
+        const triggers = document.querySelectorAll('.featured-grid__trigger');
+        if (!triggers.length) {
+            return;
+        }
+
+        const img = lightbox.querySelector('.featured-lightbox__img');
+        const closeBtn = lightbox.querySelector('.featured-lightbox__close');
+        const prevBtn = lightbox.querySelector('.featured-lightbox__prev');
+        const nextBtn = lightbox.querySelector('.featured-lightbox__next');
+        const currentEl = lightbox.querySelector('.featured-lightbox__current');
+        const totalEl = lightbox.querySelector('.featured-lightbox__total');
+
+        let currentIndex = 0;
+        const images = Array.from(triggers).map((trigger) => ({
+            src: trigger.getAttribute('data-full-src'),
+            alt: trigger.querySelector('img').getAttribute('alt') || '',
+        }));
+
+        if (totalEl) {
+            totalEl.textContent = String(images.length);
+        }
+
+        function showImage(index) {
+            currentIndex = ((index % images.length) + images.length) % images.length;
+            img.src = images[currentIndex].src;
+            img.alt = images[currentIndex].alt;
+            if (currentEl) {
+                currentEl.textContent = String(currentIndex + 1);
+            }
+        }
+
+        function openLightbox(index) {
+            showImage(index);
+            lightbox.removeAttribute('hidden');
+            document.body.style.overflow = 'hidden';
+            closeBtn.focus();
+        }
+
+        function closeLightbox() {
+            lightbox.setAttribute('hidden', '');
+            document.body.style.overflow = '';
+            img.src = '';
+            triggers[currentIndex].focus();
+        }
+
+        function nextImage() {
+            showImage(currentIndex + 1);
+        }
+
+        function prevImage() {
+            showImage(currentIndex - 1);
+        }
+
+        /* Trigger clicks */
+        triggers.forEach((trigger) => {
+            trigger.addEventListener('click', () => {
+                const index = parseInt(trigger.getAttribute('data-index'), 10);
+                openLightbox(index);
+            });
+        });
+
+        /* Close */
+        closeBtn.addEventListener('click', closeLightbox);
+        lightbox.querySelector('.featured-lightbox__backdrop').addEventListener('click', closeLightbox);
+
+        /* Prev / Next */
+        prevBtn.addEventListener('click', prevImage);
+        nextBtn.addEventListener('click', nextImage);
+
+        /* Keyboard navigation */
+        document.addEventListener('keydown', (e) => {
+            if (lightbox.hasAttribute('hidden')) {
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowRight') {
+                nextImage();
+            } else if (e.key === 'ArrowLeft') {
+                prevImage();
+            }
+        });
+
+        /* Touch swipe support */
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        lightbox.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }, { passive: true });
+
+        lightbox.addEventListener('touchend', (e) => {
+            const deltaX = e.changedTouches[0].clientX - touchStartX;
+            const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE || Math.abs(deltaY) > Math.abs(deltaX)) {
+                return;
+            }
+
+            if (deltaX > 0) {
+                prevImage();
+            } else {
+                nextImage();
+            }
+        }, { passive: true });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         populateDomCache();
         ThemeInit.navigation.init();
@@ -860,5 +979,6 @@
         ThemeInit.aboutImageHover.init();
         ThemeInit.projectCarousel.init();
         ThemeInit.portfolioFilter.init();
+        ThemeInit.featuredLightbox.init();
     });
 })();
