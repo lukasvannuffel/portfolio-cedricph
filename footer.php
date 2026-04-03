@@ -9,7 +9,7 @@
                 } else {
                     ?>
                     <a href="<?php echo esc_url(home_url('/')); ?>" class="footer-site-title">
-                        <?php bloginfo('name'); ?>
+                        <?php echo esc_html(get_bloginfo('name', 'display')); ?>
                     </a>
                     <?php
                 }
@@ -47,7 +47,7 @@
 
             <!-- Copyright -->
             <div class="footer-copyright">
-                <p>&copy;<?php echo date('Y'); ?> Cedric Ph. All rights reserved | Website by <a href="https://codelux.be" target="_blank" rel="noopener noreferrer" class="footer-link">Codelux</a></p>
+                <p>&copy;<?php echo esc_html(wp_date('Y')); ?> Cedric Ph. All rights reserved | Website by <a href="https://codelux.be" target="_blank" rel="noopener noreferrer" class="footer-link">Codelux</a></p>
             </div>
         </div>
     </div>

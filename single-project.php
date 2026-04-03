@@ -76,7 +76,7 @@ while (have_posts()) {
                 <div class="project-back-nav">
                     <?php if ($back_url && $back_label): ?>
                         <a href="<?php echo esc_url($back_url); ?>" class="back-link">
-                            <?php echo $back_link_svg; ?>
+                            <?php echo wp_kses_post($back_link_svg); ?>
                             <span><?php echo esc_html($back_label); ?></span>
                         </a>
                     <?php endif; ?>

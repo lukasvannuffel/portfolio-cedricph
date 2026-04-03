@@ -1,55 +1,5 @@
 /* ========== Google Fonts Import ========== */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
-/* ========== Global Styles ========== */
-   * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-html {
-    scroll-behavior: smooth;
-    scroll-padding-top: 10px; /* Header height + spacing on desktop */
-}
-
-@media (max-width: 768px) {
-    html {
-        scroll-padding-top: 5px; /* Header height + spacing on mobile */
-    }
-}
-
-body {
-    font-family: var(--font-body);
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* ========== Page load reveal ========== */
-.page-load-reveal {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background-color: var(--color-bg-primary);
-    pointer-events: none;
-    opacity: 1;
-    animation: pageLoadReveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes pageLoadReveal {
-    from {
-        opacity: 1;
-    }
-
-    to {
-        opacity: 0;
-        visibility: hidden;
-    }
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
 /* ========== CSS Variables ========== */
 :root {
@@ -142,6 +92,55 @@ body {
     --container-wide: 1400px;
     --container-narrow: 1000px;
     --container-form: 600px;
+}
+
+/* ========== Global Styles ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 10px;
+}
+
+@media (max-width: 768px) {
+    html {
+        scroll-padding-top: 5px;
+    }
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== Page load reveal ========== */
+.page-load-reveal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background-color: var(--color-bg-primary);
+    pointer-events: none;
+    opacity: 1;
+    animation: pageLoadReveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageLoadReveal {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
 }
 
 /* ========== Header & Navigation ========== */

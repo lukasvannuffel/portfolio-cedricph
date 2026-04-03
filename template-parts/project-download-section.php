@@ -131,7 +131,7 @@ $bulk_download_url = add_query_arg(array(
                                     </div>
                                 </div>
                                 <span class="individual-download-number">
-                                    <?php printf(__('Photo %d', 'cedricph'), $counter); ?>
+                                    <?php printf(esc_html__('Photo %d', 'cedricph'), $counter); ?>
                                 </span>
                             </a>
                         </div>

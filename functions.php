@@ -8,7 +8,7 @@
  *
  * @return void
  */
-function mytheme_setup(): void {
+function cedricph_setup(): void {
     // Title tag support
     add_theme_support('title-tag');
     
@@ -35,7 +35,7 @@ function mytheme_setup(): void {
         'primary' => __('Primary Menu', 'cedricph'),
     ));
 }
-add_action('after_setup_theme', 'mytheme_setup');
+add_action('after_setup_theme', 'cedricph_setup');
 
 /**
  * Allows SVG uploads in the Media Library and Customizer (for custom logo).
@@ -299,6 +299,12 @@ add_action('init', 'cedricph_register_project_type_taxonomy', 0);
  * @return array<int, array{url: string, alt: string, id?: int}>
  */
 function cedricph_get_project_gallery_images(int $postId): array {
+    static $cache = array();
+
+    if (isset($cache[$postId])) {
+        return $cache[$postId];
+    }
+
     $content = get_post_field('post_content', $postId);
     $gallery = array();
 
@@ -363,6 +369,9 @@ function cedricph_get_project_gallery_images(int $postId): array {
             $unique[] = $image;
         }
     }
+
+    $cache[$postId] = $unique;
+
     return $unique;
 }
 
@@ -471,35 +480,34 @@ After uploading, you can delete this text - it\'s just here to guide you!';
 add_filter('default_content', 'cedricph_project_default_content', 10, 2);
 
 /**
- * Creates default project type terms (analog, digital) on first run.
+ * Creates default project type terms (analog, digital, private) on first run.
  *
  * @return void
  */
 function cedricph_create_default_project_types(): void {
-    // Only run once
     if (get_option('cedricph_project_types_created')) {
         return;
     }
 
-    // Ensure taxonomy is registered
     if (!taxonomy_exists('project_type')) {
         return;
     }
 
-    // Create terms
-    $terms = array('analog', 'digital');
+    $terms = array(
+        'analog'  => array('slug' => 'analog'),
+        'digital' => array('slug' => 'digital'),
+        'private' => array(
+            'slug'        => 'private',
+            'description' => 'Private projects for customer delivery only',
+        ),
+    );
 
-    foreach ($terms as $term) {
-        if (!term_exists($term, 'project_type')) {
-            wp_insert_term(
-                ucfirst($term),
-                'project_type',
-                array('slug' => $term)
-            );
+    foreach ($terms as $name => $args) {
+        if (!term_exists($name, 'project_type')) {
+            wp_insert_term(ucfirst($name), 'project_type', $args);
         }
     }
 
-    // Mark as created
     update_option('cedricph_project_types_created', true);
 }
 add_action('init', 'cedricph_create_default_project_types', 11);
@@ -509,7 +517,7 @@ add_action('init', 'cedricph_create_default_project_types', 11);
  *
  * @return void
  */
-function mytheme_scripts(): void {
+function cedricph_scripts(): void {
     $main_css_path = get_template_directory() . '/assets/css/main.css';
     $main_js_path  = get_template_directory() . '/assets/js/main.js';
 
@@ -530,7 +538,7 @@ function mytheme_scripts(): void {
         true
     );
 }
-add_action('wp_enqueue_scripts', 'mytheme_scripts');
+add_action('wp_enqueue_scripts', 'cedricph_scripts');
 
 /**
  * ------------------------------------------------------------
@@ -547,7 +555,7 @@ add_action('wp_enqueue_scripts', 'mytheme_scripts');
  * @param stdClass $args  Nav menu arguments.
  * @return array Modified attributes.
  */
-function mytheme_nav_menu_link_attributes(array $atts, $item, stdClass $args): array {
+function cedricph_nav_menu_link_attributes(array $atts, $item, stdClass $args): array {
     if ($args->theme_location !== 'primary') {
         return $atts;
     }
@@ -565,7 +573,7 @@ function mytheme_nav_menu_link_attributes(array $atts, $item, stdClass $args): a
 
     return $atts;
 }
-add_filter('nav_menu_link_attributes', 'mytheme_nav_menu_link_attributes', 10, 3);
+add_filter('nav_menu_link_attributes', 'cedricph_nav_menu_link_attributes', 10, 3);
 
 /**
  * Removes active classes from menu items that link to hash sections.
@@ -576,7 +584,7 @@ add_filter('nav_menu_link_attributes', 'mytheme_nav_menu_link_attributes', 10, 3
  * @param stdClass  $args    Nav menu arguments.
  * @return string[] Modified classes.
  */
-function mytheme_nav_menu_css_class(array $classes, $item, stdClass $args): array {
+function cedricph_nav_menu_css_class(array $classes, $item, stdClass $args): array {
     if ($args->theme_location !== 'primary') {
         return $classes;
     }
@@ -601,7 +609,7 @@ function mytheme_nav_menu_css_class(array $classes, $item, stdClass $args): arra
 
     return $classes;
 }
-add_filter('nav_menu_css_class', 'mytheme_nav_menu_css_class', 10, 3);
+add_filter('nav_menu_css_class', 'cedricph_nav_menu_css_class', 10, 3);
 
 /**
  * Custom walker: renders parent items with URL "#" as a span (dropdown trigger only), not a link.
@@ -674,13 +682,13 @@ class Cedricph_Dropdown_Nav_Walker extends Walker_Nav_Menu {
  * @param string[] $classes Existing body classes.
  * @return string[] Modified classes.
  */
-function mytheme_body_classes(array $classes): array {
+function cedricph_body_classes(array $classes): array {
     if (is_front_page()) {
         $classes[] = 'is-front-page';
     }
     return $classes;
 }
-add_filter('body_class', 'mytheme_body_classes');
+add_filter('body_class', 'cedricph_body_classes');
 
 /**
  * Returns the permalink for the Analog or Digital portfolio page (by template).
@@ -690,22 +698,36 @@ add_filter('body_class', 'mytheme_body_classes');
  * @return string URL for the page, or home_url('/analog'|'/digital') if no page found.
  */
 function cedricph_get_portfolio_page_url(string $type): string {
+    static $cache = array();
+
+    if (isset($cache[$type])) {
+        return $cache[$type];
+    }
+
     $templates = array(
         'analog'  => 'page-analog.php',
         'digital' => 'page-digital.php',
     );
+
     if (!isset($templates[$type])) {
         return home_url('/');
     }
+
     $pages = get_pages(array(
         'meta_key'   => '_wp_page_template',
         'meta_value' => $templates[$type],
         'number'     => 1,
     ));
+
     if (!empty($pages)) {
-        return get_permalink($pages[0]->ID);
+        $cache[$type] = get_permalink($pages[0]->ID);
+
+        return $cache[$type];
     }
-    return home_url('/' . $type);
+
+    $cache[$type] = home_url('/' . $type);
+
+    return $cache[$type];
 }
 
 /**
@@ -1138,26 +1160,6 @@ if (function_exists('acf_add_local_field_group')) {
 // PRIVATE PROJECT GALLERY SYSTEM
 // ===================================
 
-/**
- * Creates the "Private" term in project_type taxonomy.
- * Called on theme activation/init.
- *
- * @return void
- */
-function cedricph_create_private_project_type(): void {
-    // Check if "private" term already exists
-    if (!term_exists('private', 'project_type')) {
-        wp_insert_term(
-            'Private',
-            'project_type',
-            array(
-                'slug' => 'private',
-                'description' => 'Private projects for customer delivery only',
-            )
-        );
-    }
-}
-add_action('init', 'cedricph_create_private_project_type', 11);
 
 /**
  * Generates a cryptographically secure access token for a private project.
@@ -1437,24 +1439,6 @@ function cedricph_render_private_project_meta_box(WP_Post $post): void {
 
         <div id="cedricph-token-message" style="display: none; margin-top: 12px;"></div>
     </div>
-
-    <style>
-        .cedricph-token-display input[readonly] {
-            background: #f6f7f7;
-            font-family: monospace;
-            font-size: 11px;
-            padding: 6px;
-        }
-        #cedricph-token-message {
-            padding: 8px 12px;
-            border-left: 4px solid #00a32a;
-            background: #f0f6fc;
-        }
-        #cedricph-token-message.error {
-            border-left-color: #d63638;
-            background: #fcf0f1;
-        }
-    </style>
     <?php
 }
 
@@ -1578,10 +1562,8 @@ function cedricph_download_single_image(): void {
         wp_die(__('Invalid file type.', 'cedricph'), 403);
     }
 
-    // Get original filename
-    $filename = basename($file_path);
+    $filename = sanitize_file_name(basename($file_path));
 
-    // Set headers for download
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . filesize($file_path));
