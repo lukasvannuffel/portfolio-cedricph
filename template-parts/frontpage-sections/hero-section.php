@@ -3,21 +3,22 @@
  * Hero Section Template
  *
  * Displays a full-height hero section with background image, title, subtitle, and CTA button.
- * ACF fields: hero_background_image, hero_logo, hero_title, hero_subtitle, hero_cta_text, hero_cta_link, hero_show_scroll_indicator.
+ * ACF fields: hero_background_image, hero_logo, hero_title, hero_subtitle, hero_cta_text, hero_cta_link, hero_secondary_cta_text, hero_secondary_cta_link, hero_show_scroll_indicator.
  */
 
 $background_image = get_field('hero_background_image');
 $logo = get_field('hero_logo');
 $title = get_field('hero_title') ?: __('Capturing Moments That Matter', 'cedricph');
 $subtitle = get_field('hero_subtitle') ?: __('Event & portrait photography that tells your story through authentic, cinematic imagery', 'cedricph');
-$cta_text = get_field('hero_cta_text') ?: __('View portfolio', 'cedricph');
-$cta_link = get_field('hero_cta_link');
+$cta_text = get_field('hero_cta_text') ?: __('Get in touch', 'cedricph');
+$secondary_cta_text = get_field('hero_secondary_cta_text') ?: __('View my work', 'cedricph');
+$secondary_cta_link = get_field('hero_secondary_cta_link');
 $show_scroll_indicator = get_field('hero_show_scroll_indicator');
 
-if ($cta_link === null || $cta_link === false) {
-    $cta_link = array(
-        'url'    => '#portfolio',
-        'title'  => __('View portfolio', 'cedricph'),
+if ($secondary_cta_link === null || $secondary_cta_link === false) {
+    $secondary_cta_link = array(
+        'url'    => '#featured',
+        'title'  => __('View my work', 'cedricph'),
         'target' => '',
     );
 }
@@ -48,14 +49,15 @@ if ($logo && is_array($logo) && !empty($logo['url'])) {
 
 $hero_alt = $title ?: get_bloginfo('name', 'display');
 
-$cta_url = '#';
-$cta_target = '';
-if (is_array($cta_link)) {
-    $cta_url = $cta_link['url'] ?: '#';
-    $cta_target = $cta_link['target'] ? ' target="' . esc_attr($cta_link['target']) . '"' : '';
-} elseif (is_string($cta_link)) {
-    $cta_url = $cta_link;
+$secondary_cta_url = '#featured';
+$secondary_cta_target = '';
+if (is_array($secondary_cta_link)) {
+    $secondary_cta_url = $secondary_cta_link['url'] ?: '#featured';
+    $secondary_cta_target = $secondary_cta_link['target'] ? ' target="' . esc_attr($secondary_cta_link['target']) . '"' : '';
+} elseif (is_string($secondary_cta_link)) {
+    $secondary_cta_url = $secondary_cta_link;
 }
+
 ?>
 
 <section id="hero" class="hero-section" role="banner">
@@ -104,13 +106,28 @@ if (is_array($cta_link)) {
                     </p>
                 <?php endif; ?>
                 
-                <?php if ($cta_text && $cta_url): ?>
-                    <div class="hero-cta">
-                        <a href="<?php echo esc_url($cta_url); ?>" class="btn btn-primary"<?php echo $cta_target; ?>>
+                <div class="hero-cta">
+                    <?php if ($cta_text): ?>
+                        <a
+                            href="#contact"
+                            class="btn btn--filled"
+                            aria-label="<?php echo esc_attr($cta_text); ?> — <?php esc_attr_e('open contact section', 'cedricph'); ?>"
+                        >
                             <?php echo esc_html($cta_text); ?>
                         </a>
-                    </div>
-                <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php if ($secondary_cta_text): ?>
+                        <a
+                            href="<?php echo esc_url($secondary_cta_url); ?>"
+                            class="btn btn-primary btn--secondary"
+                            aria-label="<?php echo esc_attr($secondary_cta_text); ?> — <?php esc_attr_e('open featured work section', 'cedricph'); ?>"
+                            <?php echo $secondary_cta_target; ?>
+                        >
+                            <?php echo esc_html($secondary_cta_text); ?>
+                        </a>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

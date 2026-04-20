@@ -47,7 +47,7 @@
 
             <!-- Copyright -->
             <div class="footer-copyright">
-                <p>&copy;<?php echo esc_html(wp_date('Y')); ?> Cedric Ph. All rights reserved | Website by <a href="https://codelux.be" target="_blank" rel="noopener noreferrer" class="footer-link">Codelux</a></p>
+                <p>&copy;<?php echo esc_html(wp_date('Y')); ?> Buitenbeeld Media. All rights reserved | Website by <a href="https://codelux.be" target="_blank" rel="noopener noreferrer" class="footer-link">Codelux</a></p>
             </div>
         </div>
     </div>

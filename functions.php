@@ -539,11 +539,18 @@ function cedricph_scripts(): void {
     $main_css_path = get_template_directory() . '/assets/css/main.css';
     $main_js_path  = get_template_directory() . '/assets/js/main.js';
 
+    wp_enqueue_style(
+        'cedricph-typekit',
+        'https://use.typekit.net/yeb4yjj.css',
+        array(),
+        null
+    );
+
     // Main CSS (version = file mtime for cache busting when file changes)
     wp_enqueue_style(
         'main-style',
         get_template_directory_uri() . '/assets/css/main.css',
-        array(),
+        array('cedricph-typekit'),
         file_exists($main_css_path) ? (string) filemtime($main_css_path) : '1.0.0'
     );
 
@@ -807,8 +814,8 @@ if (function_exists('acf_add_local_field_group')) {
                 'type' => 'text',
                 'instructions' => 'Enter the text for the call-to-action button',
                 'required' => 0,
-                'default_value' => 'View portfolio',
-                'placeholder' => 'e.g., View portfolio',
+                'default_value' => 'Get in touch',
+                'placeholder' => 'e.g., Get in touch',
             ),
             array(
                 'key' => 'field_hero_cta_link',
@@ -816,6 +823,25 @@ if (function_exists('acf_add_local_field_group')) {
                 'name' => 'hero_cta_link',
                 'type' => 'link',
                 'instructions' => 'Select where the CTA button should link to',
+                'required' => 0,
+                'return_format' => 'array',
+            ),
+            array(
+                'key' => 'field_hero_secondary_cta_text',
+                'label' => 'Secondary CTA Button Text',
+                'name' => 'hero_secondary_cta_text',
+                'type' => 'text',
+                'instructions' => 'Enter the text for the secondary hero button',
+                'required' => 0,
+                'default_value' => 'View my work',
+                'placeholder' => 'e.g., View my work',
+            ),
+            array(
+                'key' => 'field_hero_secondary_cta_link',
+                'label' => 'Secondary CTA Button Link',
+                'name' => 'hero_secondary_cta_link',
+                'type' => 'link',
+                'instructions' => 'Select where the secondary hero button should link to',
                 'required' => 0,
                 'return_format' => 'array',
             ),
@@ -1529,6 +1555,11 @@ function cedricph_download_single_image(): void {
         wp_die(__('Invalid project.', 'cedricph'), 403);
     }
 
+    // Block downloads when the project-level toggle is disabled.
+    if (!get_field('private_enable_downloads', $post_id)) {
+        wp_die(__('Downloads are disabled for this gallery.', 'cedricph'), 403);
+    }
+
     // Validate token
     $validation = cedricph_validate_access_token($post_id, $token);
     if (is_wp_error($validation)) {
@@ -1580,6 +1611,11 @@ function cedricph_download_gallery_zip(): void {
     // Validate project
     if (!$post_id || get_post_type($post_id) !== 'project') {
         wp_die(__('Invalid project.', 'cedricph'), 403);
+    }
+
+    // Block downloads when the project-level toggle is disabled.
+    if (!get_field('private_enable_downloads', $post_id)) {
+        wp_die(__('Downloads are disabled for this gallery.', 'cedricph'), 403);
     }
 
     // Validate token
